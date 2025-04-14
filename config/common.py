@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Dict
 
 class LogConfig(BaseModel):
     to: str
@@ -25,3 +26,10 @@ class QUICOptions(BaseModel):
     keepalivePeriod: int
     maxIdleTimeout: int
     maxIncomingStreams: int
+
+class HeaderOperations(BaseModel):
+    _set: Dict[str, str] # set
+
+class HTTPHeader(BaseModel):
+    name: str
+    value: str
