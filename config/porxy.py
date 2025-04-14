@@ -20,7 +20,7 @@ class LoadBalancerConfig(BaseModel):
     groupKey: str
 
 class HealthCheckConfig(BaseModel):
-    _type: str
+    check_type: str # type
     timeoutSeconds: int
     maxFailed: int
     intervalSeconds: int
@@ -29,7 +29,7 @@ class HealthCheckConfig(BaseModel):
 
 class ProxyBaseConfig(ProxyBackend):
     name: str
-    _type: str # type
+    proxy_type: str # type
     annotations: Dict[str, str]
     transport: ProxyTransport
     metadatas: Dict[str, str]

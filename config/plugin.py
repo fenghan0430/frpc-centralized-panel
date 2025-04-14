@@ -3,7 +3,7 @@ from typing import List, Dict
 from common import HeaderOperations
 
 class BasePlugin(BaseModel):
-    _type: str # type
+    plugin_type: str # type
 
 class HTTPProxyPluginOptions(BasePlugin):
     httpUser: str

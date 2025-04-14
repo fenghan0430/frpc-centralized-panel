@@ -28,7 +28,7 @@ class QUICOptions(BaseModel):
     maxIncomingStreams: int
 
 class HeaderOperations(BaseModel):
-    _set: Dict[str, str] # set
+    header_set: Dict[str, str] # set
 
 class HTTPHeader(BaseModel):
     name: str
