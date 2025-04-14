@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 from common import (
     LogConfig, 
     WebServerConfig,
@@ -10,53 +10,53 @@ from porxy import ProxyBaseConfig
 from visitor import VisitorBaseConfig
 
 class TLSClientConfig(TLSConfig):
-    enable: bool
-    disableCustomTLSFirstByte: bool
+    enable: Optional[bool]
+    disableCustomTLSFirstByte: Optional[bool]
 
 class ClientTransportConfig(BaseModel):
-    protocol: str
-    dialServerTimeout: int
-    dialServerKeepalive: int
-    connectServerLocalIP: str
-    proxyURL: str
-    poolCount: int
-    tcpMux: bool
-    tcpMuxKeepaliveInterval: int
-    quic: QUICOptions
-    heartbeatInterval: int
-    heartbeatTimeout: int
-    tls: TLSClientConfig
+    protocol: Optional[str]
+    dialServerTimeout: Optional[int]
+    dialServerKeepalive: Optional[int]
+    connectServerLocalIP: Optional[str]
+    proxyURL: Optional[str]
+    poolCount: Optional[int]
+    tcpMux: Optional[bool]
+    tcpMuxKeepaliveInterval: Optional[int]
+    quic: Optional[QUICOptions]
+    heartbeatInterval: Optional[int]
+    heartbeatTimeout: Optional[int]
+    tls: Optional[TLSClientConfig]
 
 class AuthOIDCClientConfig(BaseModel):
-    clientID: str
-    clientSecret: str
-    audience: str
-    scope: str
-    tokenEndpointURL: str
-    additionalEndpointParams: Dict[str, str]
+    clientID: Optional[str]
+    clientSecret: Optional[str]
+    audience: Optional[str]
+    scope: Optional[str]
+    tokenEndpointURL: Optional[str]
+    additionalEndpointParams: Optional[Dict[str, str]]
 
 class AuthClientConfig(BaseModel):
-    method: str
-    additionalScopes: List[str]
-    token: str
-    oidc: AuthOIDCClientConfig
+    method: Optional[str]
+    additionalScopes: Optional[List[str]]
+    token: Optional[str]
+    oidc: Optional[AuthOIDCClientConfig]
 
 class ClientCommonConfig(BaseModel):
-    auth: AuthClientConfig
-    user: str
-    serverAddr: str
-    serverPort: str
-    natHoleStunServer: str
-    dnsServer: str
-    loginFailExit: bool
-    start: List[str]
-    log: LogConfig
-    webServer: WebServerConfig
-    transport: ClientTransportConfig
-    udpPacketSize: int
-    metadatas: Dict[str, str]
-    includes: List[str]
+    auth: Optional[AuthClientConfig]
+    user: Optional[str]
+    serverAddr: Optional[str]
+    serverPort: Optional[str]
+    natHoleStunServer: str = "stun.easyvoip.com:3478"
+    dnsServer: Optional[str]
+    loginFailExit: bool = True
+    start: Optional[List[str]]
+    log: Optional[LogConfig]
+    webServer: Optional[WebServerConfig]
+    transport: Optional[ClientTransportConfig]
+    udpPacketSize: int = 1500
+    metadatas: Optional[Dict[str, str]]
+    includes: Optional[List[str]]
 
 class ClientConfig(ClientCommonConfig):
-    proxies: List[ProxyBaseConfig]
-    visitors: List[VisitorBaseConfig]
+    proxies: Optional[List[ProxyBaseConfig]]
+    visitors: Optional[List[VisitorBaseConfig]]
