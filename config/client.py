@@ -6,6 +6,8 @@ from common import (
     TLSConfig,
     QUICOptions
     )
+from porxy import ProxyBaseConfig
+from visitor import VisitorBaseConfig
 
 class TLSClientConfig(TLSConfig):
     enable: bool
@@ -56,5 +58,5 @@ class ClientCommonConfig(BaseModel):
     includes: List[str]
 
 class ClientConfig(ClientCommonConfig):
-    proxies: str # TODO： 实体化隧道和监听后需要修改
-    visitors: str
+    proxies: List[ProxyBaseConfig]
+    visitors: List[VisitorBaseConfig]
