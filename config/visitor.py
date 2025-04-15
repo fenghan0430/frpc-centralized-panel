@@ -1,19 +1,19 @@
-from pydantic import BaseModel
-from typing import List, Dict
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
 
 class VisitorTransport(BaseModel):
-    useEncryption: bool
-    useCompression: bool
+    useEncryption: Optional[bool]
+    useCompression: Optional[bool]
 
 class VisitorBaseConfig(BaseModel):
     name: str
-    visitor_type: str # type
-    transport: VisitorTransport
-    secretKey: str
-    serverUser: str
-    serverName: str
-    bindAddr: str
-    bindPort: int
+    type_: Literal['stcp', 'sudp', 'xtcp'] = Field(..., alias="type")
+    transport: Optional[VisitorTransport]
+    secretKey: Optional[str]
+    serverUser: Optional[str]
+    serverName: Optional[str]
+    bindAddr: Optional[str]
+    bindPort: Optional[int]
 
 class STCPVisitorConfig(VisitorBaseConfig):
     pass
@@ -22,9 +22,9 @@ class SUDPVisitorConfig(VisitorBaseConfig):
     pass
 
 class XTCPVisitorConfig(VisitorBaseConfig):
-    protocol: str
-    keepTunnelOpen: bool
-    maxRetriesAnHour: int
-    minRetryInterval: int
-    fallbackTo: str
-    fallbackTimeoutMs: int
+    protocol: Literal['quic', 'kcp'] = 'quic'
+    keepTunnelOpen: Optional[bool]
+    maxRetriesAnHour: int = 8
+    minRetryInterval: int = 90
+    fallbackTo: Optional[str]
+    fallbackTimeoutMs: Optional[int]

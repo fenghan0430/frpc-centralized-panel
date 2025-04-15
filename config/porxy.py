@@ -1,10 +1,10 @@
-from pydantic import BaseModel
-from typing import List, Dict
-from plugin import BasePlugin
-from common import HTTPHeader, HeaderOperations
+from pydantic import BaseModel, Field
+from typing import List, Dict, Literal, Optional
+from config.plugin import BasePlugin
+from config.common import HTTPHeader, HeaderOperations
 
 class ProxyBackend(BaseModel):
-    localIP: str
+    localIP: str = "127.0.0.1"
     localPort: int
     plugin: BasePlugin
 
@@ -20,58 +20,59 @@ class LoadBalancerConfig(BaseModel):
     groupKey: str
 
 class HealthCheckConfig(BaseModel):
-    check_type: str # type
-    timeoutSeconds: int
-    maxFailed: int
-    intervalSeconds: int
-    path: str
-    httpHeaders: List[HTTPHeader]
+    type_: Literal['tcp', 'http'] = Field(..., alias="type")
+    timeoutSeconds: int = 3
+    maxFailed: int = 1
+    intervalSeconds: int = 10
+    path: Optional[str]
+    httpHeaders: Optional[List[HTTPHeader]]
 
 class ProxyBaseConfig(ProxyBackend):
     name: str
-    proxy_type: str # type
-    annotations: Dict[str, str]
-    transport: ProxyTransport
-    metadatas: Dict[str, str]
-    loadBalancer: LoadBalancerConfig
-    healthCheck: HealthCheckConfig
+    type_: Literal['tcp', 'udp', 'http', 'https', 'tcpmux', 'stcp', 'sudp', 'xtcp'] \
+        = Field(..., alias="type")
+    annotations: Optional[Dict[str, str]]
+    transport: Optional[ProxyTransport]
+    metadatas: Optional[Dict[str, str]]
+    loadBalancer: Optional[LoadBalancerConfig]
+    healthCheck: Optional[HealthCheckConfig]
 
 class DomainConfig(BaseModel):
-    customDomains: List[str]
-    subDomain: str
+    customDomains: Optional[List[str]]
+    subDomain: Optional[str]
 
 class TCPProxyConfig(ProxyBaseConfig):
-    remotePort: int
+    remotePort: Optional[int]
 
 class UDPProxyConfig(ProxyBaseConfig):
-    remotePort: int
+    remotePort: Optional[int]
 
 class HTTPProxyConfig(ProxyBaseConfig, DomainConfig):
-    locations: List[str]
-    httpUser: str
-    httpPassword: str
-    hostHeaderRewrite: str
-    requestHeaders: HeaderOperations
-    responseHeaders: HeaderOperations
-    routeByHTTPUser: str
+    locations: Optional[List[str]]
+    httpUser: Optional[str]
+    httpPassword: Optional[str]
+    hostHeaderRewrite: Optional[str]
+    requestHeaders: Optional[HeaderOperations]
+    responseHeaders: Optional[HeaderOperations]
+    routeByHTTPUser: Optional[str]
 
 class HTTPSProxyConfig(ProxyBaseConfig, DomainConfig):
     pass
 
 class TCPMuxProxyConfig(ProxyBaseConfig, DomainConfig):
-    httpUser: str
-    httpPassword: str
-    routeByHTTPUser: str
-    multiplexer: str
+    httpUser: Optional[str]
+    httpPassword: Optional[str]
+    routeByHTTPUser: Optional[str]
+    multiplexer: Optional[str]
 
 class STCPProxyConfig(ProxyBaseConfig):
-    secretKey: str
-    allowUsers: List[str]
+    secretKey: Optional[str]
+    allowUsers: Optional[List[str]]
 
 class XTCPProxyConfig(ProxyBaseConfig):
-    secretKey: str
-    allowUsers: List[str]
+    secretKey: Optional[str]
+    allowUsers: Optional[List[str]]
 
 class SUDPProxyConfig(ProxyBaseConfig):
-    secretKey: str
-    allowUsers: List[str]
+    secretKey: Optional[str]
+    allowUsers: Optional[List[str]]
