@@ -36,7 +36,7 @@ class AuthOIDCClientConfig(BaseModel):
     additionalEndpointParams: Optional[Dict[str, str]] = None
 
 class AuthClientConfig(BaseModel):
-    method: Optional[str] = None
+    method: str = "token"
     additionalScopes: Optional[List[str]] = None
     token: Optional[str] = None
     oidc: Optional[AuthOIDCClientConfig] = None
