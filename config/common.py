@@ -2,25 +2,25 @@ from pydantic import BaseModel
 from typing import Dict, Optional
 
 class LogConfig(BaseModel):
-    to: Optional[str]
+    to: Optional[str] = None
     level: str = "info"
     maxDays: int = 3
-    disablePrintColor: Optional[bool]
+    disablePrintColor: Optional[bool] = None
 
 class TLSConfig(BaseModel):
     certFile: str
     keyFile: str
-    trustedCaFile: Optional[str]
-    serverName: Optional[str]
+    trustedCaFile: Optional[str] = None
+    serverName: Optional[str] = None
 
 class WebServerConfig(BaseModel):
     addr: str = "127.0.0.1"
     port: int
-    user: Optional[str]
-    password: Optional[str] 
-    assetsDir: Optional[str]
-    pprofEnable: Optional[str]
-    tls: Optional[TLSConfig]
+    user: Optional[str] = None
+    password: Optional[str] = None 
+    assetsDir: Optional[str] = None
+    pprofEnable: Optional[str] = None
+    tls: Optional[TLSConfig] = None
 
 class QUICOptions(BaseModel):
     keepalivePeriod: int = 10
@@ -28,7 +28,7 @@ class QUICOptions(BaseModel):
     maxIncomingStreams: int = 100000
 
 class HeaderOperations(BaseModel):
-    header_set: Optional[Dict[str, str]]
+    header_set: Optional[Dict[str, str]] = None
 
 class HTTPHeader(BaseModel):
     name: str

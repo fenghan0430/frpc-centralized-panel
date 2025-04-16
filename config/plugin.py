@@ -6,42 +6,42 @@ class BasePlugin(BaseModel):
     type_: str = Field(..., alias="type")
 
 class HTTPProxyPluginOptions(BasePlugin):
-    httpUser: Optional[str]
-    httpPassword: Optional[str]
+    httpUser: Optional[str] = None
+    httpPassword: Optional[str] = None
 
 class Socks5PluginOptions(BasePlugin):
-    username: Optional[str]
-    password: Optional[str]
+    username: Optional[str] = None
+    password: Optional[str] = None
 
 class StaticFilePluginOptions(BasePlugin):
     localPath: str
-    stripPrefix: Optional[str]
-    httpUser: Optional[str]
-    httpPassword: Optional[str]
+    stripPrefix: Optional[str] = None
+    httpUser: Optional[str] = None
+    httpPassword: Optional[str] = None
 
 class UnixDomainSocketPluginOptions(BasePlugin):
     unixPath: str
 
 class HTTP2HTTPSPluginOptions(BasePlugin):
     localAddr: str
-    hostHeaderRewrite: Optional[str]
-    requestHeaders: Optional[HeaderOperations]
+    hostHeaderRewrite: Optional[str] = None
+    requestHeaders: Optional[HeaderOperations] = None
 
 class HTTPS2HTTPPluginOptions(BasePlugin):
     localAddr: str
-    hostHeaderRewrite: Optional[str]
-    requestHeaders: Optional[HeaderOperations]
+    hostHeaderRewrite: Optional[str] = None
+    requestHeaders: Optional[HeaderOperations] = None
     enableHTTP2: bool = True
-    crtPath: Optional[str]
-    keyPath: Optional[str]
+    crtPath: Optional[str] = None
+    keyPath: Optional[str] = None
 
 class HTTPS2HTTPSPluginOptions(BasePlugin):
     localAddr: str
-    hostHeaderRewrite: Optional[str]
-    requestHeaders: Optional[HeaderOperations]
+    hostHeaderRewrite: Optional[str] = None
+    requestHeaders: Optional[HeaderOperations] = None
     enableHTTP2: bool = True
-    crtPath: Optional[str]
-    keyPath: Optional[str]
+    crtPath: Optional[str] = None
+    keyPath: Optional[str] = None
 
 class TLS2RawPluginOptions(BasePlugin):
     localAddr: str

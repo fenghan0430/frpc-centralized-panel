@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, SerializeAsAny
 from typing import List, Dict, Optional
 from config.common import (
     LogConfig, 
@@ -10,42 +10,42 @@ from config.porxy import ProxyBaseConfig
 from config.visitor import VisitorBaseConfig
 
 class TLSClientConfig(TLSConfig):
-    enable: Optional[bool]
-    disableCustomTLSFirstByte: Optional[bool]
+    enable: Optional[bool] = None
+    disableCustomTLSFirstByte: Optional[bool] = None
 
 class ClientTransportConfig(BaseModel):
-    protocol: Optional[str]
-    dialServerTimeout: Optional[int]
-    dialServerKeepalive: Optional[int]
-    connectServerLocalIP: Optional[str]
-    proxyURL: Optional[str]
-    poolCount: Optional[int]
-    tcpMux: Optional[bool]
-    tcpMuxKeepaliveInterval: Optional[int]
-    quic: Optional[QUICOptions]
-    heartbeatInterval: Optional[int]
-    heartbeatTimeout: Optional[int]
-    tls: Optional[TLSClientConfig]
+    protocol: Optional[str] = None
+    dialServerTimeout: Optional[int] = None
+    dialServerKeepalive: Optional[int] = None
+    connectServerLocalIP: Optional[str] = None
+    proxyURL: Optional[str] = None
+    poolCount: Optional[int] = None
+    tcpMux: Optional[bool] = None
+    tcpMuxKeepaliveInterval: Optional[int] = None
+    quic: Optional[QUICOptions] = None
+    heartbeatInterval: Optional[int] = None
+    heartbeatTimeout: Optional[int] = None
+    tls: Optional[TLSClientConfig] = None
 
 class AuthOIDCClientConfig(BaseModel):
-    clientID: Optional[str]
-    clientSecret: Optional[str]
-    audience: Optional[str]
-    scope: Optional[str]
-    tokenEndpointURL: Optional[str]
-    additionalEndpointParams: Optional[Dict[str, str]]
+    clientID: Optional[str] = None
+    clientSecret: Optional[str] = None
+    audience: Optional[str] = None
+    scope: Optional[str] = None
+    tokenEndpointURL: Optional[str] = None
+    additionalEndpointParams: Optional[Dict[str, str]] = None
 
 class AuthClientConfig(BaseModel):
-    method: Optional[str]
-    additionalScopes: Optional[List[str]]
-    token: Optional[str]
-    oidc: Optional[AuthOIDCClientConfig]
+    method: Optional[str] = None
+    additionalScopes: Optional[List[str]] = None
+    token: Optional[str] = None
+    oidc: Optional[AuthOIDCClientConfig] = None
 
 class ClientCommonConfig(BaseModel):
     auth: Optional[AuthClientConfig] = None
     user: Optional[str] = None
     serverAddr: Optional[str] = None
-    serverPort: Optional[str] = None
+    serverPort: Optional[int] = None
     natHoleStunServer: str = "stun.easyvoip.com:3478"
     dnsServer: Optional[str] = None
     loginFailExit: bool = True
@@ -58,5 +58,5 @@ class ClientCommonConfig(BaseModel):
     includes: Optional[List[str]] = None
 
 class ClientConfig(ClientCommonConfig):
-    proxies: Optional[List[ProxyBaseConfig]] = None
-    visitors: Optional[List[VisitorBaseConfig]] = None
+    proxies: Optional[List[SerializeAsAny[ProxyBaseConfig]]] = None
+    visitors: Optional[List[SerializeAsAny[VisitorBaseConfig]]] = None
