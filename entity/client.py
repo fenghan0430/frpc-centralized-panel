@@ -1,13 +1,13 @@
 from pydantic import BaseModel, SerializeAsAny
 from typing import List, Dict, Optional
-from config.common import (
+from entity.common import (
     LogConfig, 
     WebServerConfig,
     TLSConfig,
     QUICOptions
     )
-from config.porxy import ProxyBaseConfig
-from config.visitor import VisitorBaseConfig
+from entity.porxy import ProxyBaseConfig
+from entity.visitor import VisitorBaseConfig
 
 class TLSClientConfig(TLSConfig):
     enable: Optional[bool] = None

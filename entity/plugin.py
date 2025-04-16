@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
-from config.common import HeaderOperations
+from entity.common import HeaderOperations
 
 class BasePlugin(BaseModel):
     type_: str = Field(..., alias="type")

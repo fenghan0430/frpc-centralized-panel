@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List, Type
-from config.client import ClientConfig
-from config.porxy import (
+from entity.client import ClientConfig
+from entity.porxy import (
     TCPMuxProxyConfig,
     TCPProxyConfig,
     UDPProxyConfig,
@@ -11,7 +11,7 @@ from config.porxy import (
     SUDPProxyConfig,
     XTCPProxyConfig,
     )
-from config.visitor import (
+from entity.visitor import (
     STCPVisitorConfig, 
     SUDPVisitorConfig, 
     XTCPVisitorConfig

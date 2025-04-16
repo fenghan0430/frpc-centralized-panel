@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Literal, Optional
-from config.plugin import BasePlugin
-from config.common import HTTPHeader, HeaderOperations
+from entity.plugin import BasePlugin
+from entity.common import HTTPHeader, HeaderOperations
 
 class ProxyBackend(BaseModel):
     localIP: str = "127.0.0.1"
