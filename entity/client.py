@@ -6,7 +6,7 @@ from entity.common import (
     TLSConfig,
     QUICOptions
     )
-from entity.porxy import ProxyBaseConfig
+from entity.proxy import ProxyBaseConfig
 from entity.visitor import VisitorBaseConfig
 
 class TLSClientConfig(TLSConfig):
@@ -15,7 +15,7 @@ class TLSClientConfig(TLSConfig):
 
 class ClientTransportConfig(BaseModel):
     protocol: Optional[str] = None
-    dialServerTimeout: Optional[int] = None
+    dialServerTimeout: int = 10
     dialServerKeepalive: Optional[int] = None
     connectServerLocalIP: Optional[str] = None
     proxyURL: Optional[str] = None
@@ -23,8 +23,8 @@ class ClientTransportConfig(BaseModel):
     tcpMux: Optional[bool] = None
     tcpMuxKeepaliveInterval: Optional[int] = None
     quic: Optional[QUICOptions] = None
-    heartbeatInterval: Optional[int] = None
-    heartbeatTimeout: Optional[int] = None
+    heartbeatInterval: Optional[int] = None # 这个选项建议由tcpMuxKeepaliveInterval代替
+    heartbeatTimeout: Optional[int] = None 
     tls: Optional[TLSClientConfig] = None
 
 class AuthOIDCClientConfig(BaseModel):

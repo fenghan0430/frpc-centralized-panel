@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List, Type
 from entity.client import ClientConfig
-from entity.porxy import (
+from entity.proxy import (
     TCPMuxProxyConfig,
     TCPProxyConfig,
     UDPProxyConfig,
@@ -35,10 +35,10 @@ VISITOR_TYPE_MAP: Dict[str, Type] = {
     'xtcp': XTCPVisitorConfig,
 }
 
-def load_config(file_path: str) -> ClientConfig:
-    """从指定的JSON文件加载配置"""
-    with open(file_path, "r") as f:
-        json_data = json.load(f)
+def load_config(json_str: str) -> ClientConfig:
+    """加载JSON字符串成实体类"""
+    
+    json_data = json.loads(json_str)
     
     # 提取并移除proxies和visitors
     json_proxies = json_data.pop("proxies", [])
