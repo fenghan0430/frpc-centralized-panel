@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from utils.ConfigManager import ConfigManager
-from api.v1.proxy import router
+from api.v1.proxy import router as proxy_router
+from api.v1.visitor import router as visitor_router
 from fastapi.middleware.cors import CORSMiddleware
 
 # 临时配置文件地址
@@ -19,4 +20,5 @@ app.add_middleware(
     allow_headers=["*"],  # 允许所有请求头
 )
 
-app.include_router(router)
+app.include_router(proxy_router)
+app.include_router(visitor_router)
