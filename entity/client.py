@@ -58,5 +58,5 @@ class ClientCommonConfig(BaseModel):
     includes: Optional[List[str]] = None
 
 class ClientConfig(ClientCommonConfig):
-    proxies: Optional[List[SerializeAsAny[ProxyBaseConfig]]] = None
-    visitors: Optional[List[SerializeAsAny[VisitorBaseConfig]]] = None
+    proxies: Optional[List[SerializeAsAny[ProxyBaseConfig]]] = []
+    visitors: Optional[List[SerializeAsAny[VisitorBaseConfig]]] = []

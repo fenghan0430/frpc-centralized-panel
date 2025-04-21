@@ -42,7 +42,7 @@ class ProxyBaseConfig(ProxyBackend):
         cls.__annotations__.update(kwargs.get('model_config', {}))
     
 class DomainConfig(BaseModel):
-    customDomains: Optional[List[str]] = None
+    customDomains: Optional[List[str]] = []
     subDomain: Optional[str] = None
 
 class TCPProxyConfig(ProxyBaseConfig):
