@@ -65,7 +65,7 @@ class ConfigManager:
         try:
             with self.lock:
                 with open(self.config_file, 'w') as f:
-                    data = config.model_dump(exclude_unset= True, by_alias=True)
+                    data = config.model_dump(exclude_none= True, by_alias=True)
                     if self.config_type == 'toml':
                         toml.dump(data, f)
                     else:
