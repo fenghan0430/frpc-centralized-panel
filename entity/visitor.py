@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 class VisitorTransport(BaseModel):
     useEncryption: Optional[bool] = None
@@ -8,12 +8,12 @@ class VisitorTransport(BaseModel):
 class VisitorBaseConfig(BaseModel):
     name: str
     type_: Literal['stcp', 'sudp', 'xtcp'] = Field(..., alias="type")
+    bindAddr: str
+    bindPort: int    
     transport: Optional[VisitorTransport] = None
     secretKey: Optional[str] = None
     serverUser: Optional[str] = None
     serverName: Optional[str] = None
-    bindAddr: Optional[str] = None
-    bindPort: Optional[int] = None
 
 class STCPVisitorConfig(VisitorBaseConfig):
     pass
