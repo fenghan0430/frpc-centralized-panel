@@ -65,9 +65,9 @@ async def newProxy(data: dict):
     try:
         # 转为实体类，顺便验证合不合法
         new_proxy_config = PROXY_TYPE_MAP[data["type"]](**data)
-        print(new_proxy_config.model_dump(exclude_none=True, by_alias=True))
     except Exception as e:
-        raise HTTPException(status_code=422, detail={"status": 422, "massage": "配置文件格式不正确: " + str(e)})
+        raise HTTPException(status_code=422, 
+                            detail={"status": 422, "massage": "配置文件格式不正确: " + str(e), "input": data})
     
     # 检测
     client_config = config.load_config()
@@ -82,6 +82,8 @@ async def newProxy(data: dict):
         if data["type"] in ['tcp', 'udp'] and i.type_ in ['tcp', 'udp']:
             if new_proxy_config.remotePort == None:
                 raise HTTPException(status_code=422, detail={"status": 422, "massage": "remotePort为空,不支持这样的写法"})
+            if i.reotePort == None: # type: ignore
+                continue
             if i.remotePort == new_proxy_config.remotePort:  # type: ignore
                 raise HTTPException(status_code=409, detail={"status": 409, "massage": f"端口{new_proxy_config.remotePort}已经被占用"})
         # 检测http, https绑定域名是否重复
