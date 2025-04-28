@@ -1,5 +1,3 @@
-from hmac import new
-from math import e
 from typing import Dict, Type
 from fastapi import APIRouter, HTTPException
 from entity.proxy import HTTPProxyConfig, HTTPSProxyConfig, STCPProxyConfig, SUDPProxyConfig, TCPMuxProxyConfig, TCPProxyConfig, UDPProxyConfig, XTCPProxyConfig
@@ -57,17 +55,17 @@ async def newProxy(data: dict):
     """
     
     if "type" not in data.keys():
-        raise HTTPException(status_code=400, detail={"status": 400, "massage": "请求体中缺少type字段"})
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "请求体中缺少type字段"})
     
     if data["type"] not in PROXY_TYPE_MAP.keys():
-        raise HTTPException(status_code=400, detail={"status": 400, "massage": "类型%s不是一个有效的类型"%data["type"]})
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "类型%s不是一个有效的类型"%data["type"]})
     
     try:
         # 转为实体类，顺便验证合不合法
         new_proxy_config = PROXY_TYPE_MAP[data["type"]](**data)
     except Exception as e:
         raise HTTPException(status_code=422, 
-                            detail={"status": 422, "massage": "配置文件格式不正确: " + str(e), "input": data})
+                            detail={"status": 422, "message": "配置文件格式不正确: " + str(e), "input": data})
     
     # 检测
     client_config = config.load_config()
@@ -77,21 +75,21 @@ async def newProxy(data: dict):
     for i in client_config.proxies:
         # 检测名字是否重名，也许事应该前端也做一遍？
         if i.name == new_proxy_config.name:
-            raise HTTPException(status_code=409, detail={"status": 409, "massage": f"名字{new_proxy_config.name}已经被占用"})
+            raise HTTPException(status_code=409, detail={"status": 409, "message": f"名字{new_proxy_config.name}已经被占用"})
         # 检测tcp, udp端口是否重复
         if data["type"] in ['tcp', 'udp'] and i.type_ in ['tcp', 'udp']:
             if new_proxy_config.remotePort == None:
-                raise HTTPException(status_code=422, detail={"status": 422, "massage": "remotePort为空,不支持这样的写法"})
-            if i.reotePort == None: # type: ignore
+                raise HTTPException(status_code=422, detail={"status": 422, "message": "remotePort为空,不支持这样的写法"})
+            if i.remotePort == None: # type: ignore
                 continue
             if i.remotePort == new_proxy_config.remotePort:  # type: ignore
-                raise HTTPException(status_code=409, detail={"status": 409, "massage": f"端口{new_proxy_config.remotePort}已经被占用"})
+                raise HTTPException(status_code=409, detail={"status": 409, "message": f"端口{new_proxy_config.remotePort}已经被占用"})
         # 检测http, https绑定域名是否重复
         if data["type"] in ['http', 'https'] and i.type_ in ['http', 'https']:
             if i.customDomains == None: # type: ignore
                 continue
             if new_proxy_config.customDomains == None:
-                raise HTTPException(status_code=422, detail={"status": 422, "massage": "customDomains为空,不支持这样的写法"})
+                raise HTTPException(status_code=422, detail={"status": 422, "message": "customDomains为空,不支持这样的写法"})
             for domain in i.customDomains: # type: ignore
                 for domain2 in new_proxy_config.customDomains: # type: ignore
                     if domain == domain2:
@@ -101,4 +99,4 @@ async def newProxy(data: dict):
     config.save_config(client_config)
     # 热加载配置文件
 
-    return {"status": 200, "message": f"创建{new_proxy_config.type_}隧道{new_proxy_config.name}成功"}
+    return {"status": 201, "message": f"创建{new_proxy_config.type_}隧道{new_proxy_config.name}成功"}
