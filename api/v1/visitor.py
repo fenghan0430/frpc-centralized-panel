@@ -43,18 +43,17 @@ async def getProxy():
 def newVisitor(data: dict):
     
     if "type" not in data.keys():
-        raise HTTPException(status_code=400, detail={"status": 400, "massage": "请求体中缺少type字段"})
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "请求体中缺少type字段"})
     
     if data["type"] not in VISITOR_TYPE_MAP.keys():
-        raise HTTPException(status_code=400, detail={"status": 400, "massage": "类型%s不是一个有效的类型"%data["type"]})
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "类型%s不是一个有效的类型"%data["type"]})
     
     try:
         # 转为实体类，顺便验证合不合法
         new_visitor_config = VISITOR_TYPE_MAP[data["type"]](**data)
-        print(new_visitor_config.model_dump(exclude_none=True, by_alias=True))
     except Exception as e:
         raise HTTPException(status_code=422, 
-                            detail={"status": 422, "massage": "配置文件格式不正确: " + str(e), "input": data})
+                            detail={"status": 422, "message": "配置文件格式不正确: " + str(e), "input": data})
 
     client_config = config.load_config()
     
@@ -64,32 +63,45 @@ def newVisitor(data: dict):
     for i in client_config.visitors:
         # 检测名字是否重名，也许事应该前端也做一遍？
         if i.name == new_visitor_config.name:
-            raise HTTPException(status_code=409, detail={"status": 409, "massage": f"名字{new_visitor_config.name}已经被占用"})
+            raise HTTPException(status_code=409, detail={"status": 409, "message": f"名字{new_visitor_config.name}已经被占用"})
         # 检测端口是否重复
-        # if data["type"] in ['tcp', 'udp'] and i.type_ in ['tcp', 'udp']:
-        #     if new_proxy_config.remotePort == None:
-        #         raise HTTPException(status_code=422, detail={"status": 422, "massage": "remotePort为空,不支持这样的写法"})
-        #     if i.remotePort == new_proxy_config.remotePort:  # type: ignore
-        #         raise HTTPException(status_code=409, detail={"status": 409, "massage": f"端口{new_proxy_config.remotePort}已经被占用"})
         if i.bindAddr == new_visitor_config.bindAddr:
             if i.bindPort == new_visitor_config.bindPort:  # type: ignore
-                raise HTTPException(status_code=409, detail={"status": 409, "massage": f"端口{new_visitor_config.remotePort}已经被占用"})
-"""
-elif data.type_ in VISITOR_TYPE_MAP.keys():
-            new_proxy_config = VISITOR_TYPE_MAP[data.type_](**data.data)
-            
-            client_config = config.load_config()
-            if client_config.visitors == None:
-                client_config.visitors = []
-            for i in client_config.visitors:
-                if i.name == new_proxy_config.name:
-                    return {"status": "error", "message": f"名字{new_proxy_config.name}已经被占用"}
-                if i.bindAddr != None and i.bindAddr == new_proxy_config.bindAddr: # 通过配置文件验证本地端口占用
-                    if i.bindPort == new_proxy_config.bindPort:
-                        return {"status": "error", "message": f"地址{new_proxy_config.bindAddr}:{new_proxy_config.bindPort}已经被占用"}
-            
-            # client_config.visitors.append(new_proxy_config)
-            # config.save_config(client_config)
-        else:
-            return {"status": "error", "message": f"类型{data.type_}不是一个有效的类型"}
-"""
+                raise HTTPException(status_code=409, detail=
+                                    {"status": 409, "message": "网络地址%s:%s已经被占用"%(new_visitor_config.bindAddr, new_visitor_config.bindPort)})
+        
+        client_config.visitors.append(new_visitor_config)
+        config.save_config(client_config)
+        # print("接收到配置：%s"%new_visitor_config.model_dump(exclude_none=True, by_alias=True))
+        
+        return {"status": 201, "message": "接收配置%s创建成功"%new_visitor_config.name}
+
+@router.delete("/visitor/{visitor_name}", status_code=200)
+async def delete_visitor(visitor_name: str):
+    """删除指定的接收配置
+
+    Args:
+        visitor_name (str): 接收配置的唯一标识
+
+    Returns:
+        dict: 删除结果的状态信息
+    """
+    client_config = config.load_config()
+    
+    if client_config.visitors is None or not client_config.visitors:
+        raise HTTPException(status_code=404, detail={"status": 404, "message": "没有找到任何接收配置"})
+    
+    # 查找并删除指定的接收配置
+    visitor_to_delete = None
+    for visitor in client_config.visitors:
+        if visitor.name == visitor_name:
+            visitor_to_delete = visitor
+            break
+    
+    if visitor_to_delete is None:
+        raise HTTPException(status_code=404, detail={"status": 404, "message": f"未找到名为 {visitor_name} 的接收配置"})
+    
+    client_config.visitors.remove(visitor_to_delete)
+    config.save_config(client_config)
+    
+    return {"status": 200, "message": f"成功删除接收配置 {visitor_name}"}

@@ -100,3 +100,33 @@ async def newProxy(data: dict):
     # 热加载配置文件
 
     return {"status": 201, "message": f"创建{new_proxy_config.type_}隧道{new_proxy_config.name}成功"}
+
+@router.delete("/proxy/{proxy_name}", status_code=200)
+async def delete_proxy(proxy_name: str):
+    """删除指定的隧道
+
+    Args:
+        proxy_id (str): 隧道的唯一标识
+
+    Returns:
+        dict: 删除结果的状态信息
+    """
+    client_config = config.load_config()
+    
+    if client_config.proxies is None or not client_config.proxies:
+        raise HTTPException(status_code=404, detail={"status": 404, "message": "没有找到任何隧道"})
+    
+    # 查找并删除指定的隧道
+    proxy_to_delete = None
+    for proxy in client_config.proxies:
+        if proxy.name == proxy_name:
+            proxy_to_delete = proxy
+            break
+    
+    if proxy_to_delete is None:
+        raise HTTPException(status_code=404, detail={"status": 404, "message": f"未找到名为 {proxy_name} 的隧道"})
+    
+    client_config.proxies.remove(proxy_to_delete)
+    config.save_config(client_config)
+    
+    return {"status": 200, "message": f"成功删除隧道 {proxy_name}"}
