@@ -43,6 +43,97 @@ async def getProxy():
     
     return return_data
 
+@router.get("/proxy/{proxy_name}", status_code=200)
+async def get_proxy_by_name(proxy_name: str):
+    """
+    获取指定 name 的隧道配置
+    """
+    client_config = config.load_config()
+
+    # 没有任何隧道
+    if not client_config.proxies:
+        raise HTTPException(
+            status_code=404,
+            detail={"status": 404, "message": "没有找到任何隧道"}
+        )
+
+    # 根据 name 查找
+    for proxy in client_config.proxies:
+        if proxy.name == proxy_name:
+            return proxy.model_dump(by_alias=True, exclude_none=True)
+
+    # 未找到对应隧道
+    raise HTTPException(
+        status_code=404,
+        detail={"status": 404, "message": f"未找到名为 {proxy_name} 的隧道"}
+    )
+
+@router.patch("/proxy", status_code=200)
+async def update_proxy(data: dict):
+    """
+    更新指定 name 的隧道配置
+    """
+    
+    if "type" not in data.keys():
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "请求体中缺少type字段"})
+    
+    if "name" not in data.keys():
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "请求体中缺少name字段"})
+    
+    proxy_name = data['name']
+    
+    if data["type"] not in PROXY_TYPE_MAP.keys():
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "类型%s不是一个有效的类型"%data["type"]})
+    
+    client_config = config.load_config()
+    if not client_config.proxies:
+        raise HTTPException(status_code=404, detail={"status": 404, "message": "没有找到任何隧道"})
+
+    # 查找要更新的隧道
+    for idx, proxy in enumerate(client_config.proxies):
+        if proxy.name == proxy_name:
+            old_proxy = proxy
+            target_index = idx
+            break
+    else:
+        raise HTTPException(status_code=404, detail={"status": 404, "message": f"未找到名为 {proxy_name} 的隧道"})
+
+    # 不允许修改隧道类型
+    if "type" in data and data["type"] != old_proxy.type_:
+        raise HTTPException(status_code=400, detail={"status": 400, "message": "不支持修改隧道类型, 旧隧道为: %s, 新隧道为: %s" % (old_proxy.type_, data["type"])})
+ 
+    # 合并旧数据与新传入字段，并进行校验
+    merged = old_proxy.model_dump()
+    merged.update(data)
+    try:
+        updated_proxy = PROXY_TYPE_MAP[old_proxy.type_](**merged)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail={"status": 422, "message": "配置格式不正确: " + str(e), "input": data})
+
+    # 唯一性检查（跳过自身）
+    for i, other in enumerate(client_config.proxies):
+        if i == target_index:
+            continue
+        # 名称冲突
+        if updated_proxy.name == other.name:
+            raise HTTPException(status_code=409, detail={"status": 409, "message": f"名字{updated_proxy.name}已经被占用"})
+        # tcp/udp 端口冲突
+        if old_proxy.type_ in ['tcp', 'udp'] and other.type_ in ['tcp', 'udp']:
+            if updated_proxy.remotePort and other.remotePort == updated_proxy.remotePort: # type: ignore
+                raise HTTPException(status_code=409, detail={"status": 409, "message": f"端口{updated_proxy.remotePort}已经被占用"})
+        # http/https 域名冲突
+        if old_proxy.type_ in ['http', 'https'] and other.type_ in ['http', 'https']:
+            if updated_proxy.customDomains:
+                for d in updated_proxy.customDomains:
+                    if other.customDomains and d in other.customDomains: # type: ignore
+                        raise HTTPException(status_code=409, detail={"status": 409, "message": f"域名{d}已经被{other.name}占用"})
+
+    # 应用更新并保存
+    client_config.proxies[target_index] = updated_proxy
+    config.save_config(client_config)
+
+    return {"status": 200, "message": f"更新隧道 {proxy_name} 成功"}
+
 @router.post("/proxy", status_code=201)
 async def newProxy(data: dict):
     """_summary_
@@ -69,7 +160,7 @@ async def newProxy(data: dict):
     
     # 检测
     client_config = config.load_config()
-    if client_config.proxies == None:
+    if not client_config.proxies:
         client_config.proxies = []
     
     for i in client_config.proxies:
