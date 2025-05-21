@@ -2,10 +2,12 @@ from contextlib import asynccontextmanager
 import logging
 import os
 import shutil
+from unittest import async_case
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from utils.database import DataBase
 from utils.program_manager import ProgramManager
+import asyncio
 
 data_path = "data/"
 
@@ -36,13 +38,14 @@ def clear_upload_temp():
             shutil.rmtree(item_path)
         elif os.path.isfile(item_path):
             os.remove(item_path)
-    print("清理缓存")
+    app.state.logger.info("缓存清理完成")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
     app.state.logger = logging.getLogger("uvicorn.error")
     app.state.program_manager = ProgramManager()
+    clear_upload_temp()
     yield
     
     program_manager: ProgramManager = app.state.program_manager
@@ -71,9 +74,6 @@ app.add_middleware(
 if not os.path.exists(data_path):
     os.makedirs(data_path)
     init()
-
-# 清理上传缓存
-# clear_upload_temp()
 
 from api.v1.proxy import router as proxy_router
 from api.v1.visitor import router as visitor_router
