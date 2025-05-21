@@ -1,25 +1,13 @@
 from contextlib import asynccontextmanager
+import logging
 import os
-from fastapi import APIRouter, FastAPI
-from utils.ConfigManager import ConfigManager
-from api.v1.proxy import router as proxy_router
-from api.v1.visitor import router as visitor_router
-from api.v1.client import router as client_router
-from api.v1.upload import router as upload_router
+import shutil
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from utils.database import DataBase
+from utils.program_manager import ProgramManager
 
 data_path = "data/"
-app = FastAPI()
-
-# 配置 CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://127.0.0.1:5000"],  # 允许的源列表，这里是你的 Vue 应用地址
-    allow_credentials=True,
-    allow_methods=["*"],  # 允许所有方法
-    allow_headers=["*"],  # 允许所有请求头
-)
 
 def init():
     """初始化应用程序数据
@@ -27,12 +15,74 @@ def init():
     with DataBase(data_path + "data.db") as db:
         db.init_db()
 
+def clear_upload_temp():
+    """
+    清理上传的临时缓存文件夹。
+
+    遍历并删除 `data_path/temp/` 目录下的所有文件和子文件夹。
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    temp_dir = os.path.join(data_path, "temp")
+    if not os.path.exists(temp_dir):
+        return
+    for item in os.listdir(temp_dir):
+        item_path = os.path.join(temp_dir, item)
+        if os.path.isdir(item_path):
+            shutil.rmtree(item_path)
+        elif os.path.isfile(item_path):
+            os.remove(item_path)
+    print("清理缓存")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    app.state.logger = logging.getLogger("uvicorn.error")
+    app.state.program_manager = ProgramManager()
+    yield
+    
+    program_manager: ProgramManager = app.state.program_manager
+    program_manager.stop_all()
+
+app = FastAPI(lifespan=lifespan)
+
+def get_manager() -> ProgramManager:
+    global app
+    return app.state.program_manager
+
+def get_logger() -> logging.Logger:
+    global app
+    return app.state.logger
+
+# 配置 CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5173", "http://127.0.0.1:5000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # 检测data文件夹存不存在
 if not os.path.exists(data_path):
     os.makedirs(data_path)
     init()
 
+# 清理上传缓存
+# clear_upload_temp()
+
+from api.v1.proxy import router as proxy_router
+from api.v1.visitor import router as visitor_router
+from api.v1.client import router as client_router
+from api.v1.upload import router as upload_router
+from api.v1.program import router as program_router
+
 app.include_router(proxy_router)
 app.include_router(visitor_router)
 app.include_router(client_router)
 app.include_router(upload_router)
+app.include_router(program_router)
