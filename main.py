@@ -2,12 +2,10 @@ from contextlib import asynccontextmanager
 import logging
 import os
 import shutil
-from unittest import async_case
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from utils.database import DataBase
 from utils.program_manager import ProgramManager
-import asyncio
 
 data_path = "data/"
 
