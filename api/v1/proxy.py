@@ -101,7 +101,7 @@ async def update_proxy(data: dict):
     # 不允许修改隧道类型
     if "type" in data and data["type"] != old_proxy.type_:
         raise HTTPException(status_code=400, detail={"status": 400, "message": "不支持修改隧道类型, 旧隧道为: %s, 新隧道为: %s" % (old_proxy.type_, data["type"])})
- 
+
     # 合并旧数据与新传入字段，并进行校验
     merged = old_proxy.model_dump()
     merged.update(data)
