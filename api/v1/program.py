@@ -1,6 +1,7 @@
 import os
 import shutil
 from fastapi import APIRouter, Depends, Form, HTTPException, Path
+from pydantic import BaseModel, Field
 from utils.database import DataBase
 from utils.function_from_main import get_manager_from_main
 from utils.program_manager import ProgramManager
@@ -249,12 +250,17 @@ async def stop_program(
                 )
     return {"status": 204, "message": f"程序ID为{program_id}未在运行，无需停止"}
 
+class ProgramControllerResponse(BaseModel):
+    action: str = Field(..., description="操作类型，支持 start, stop, restart")
+
 @router.post("/program/{program_id}")
 async def program_controller(
-    program_id: str = Path(..., description="要操作的程序ID"), 
-    action: str = Form(..., description="操作类型，支持 start, stop, restart"),
+    body: ProgramControllerResponse,
+    program_id: str = Path(..., description="要操作的程序ID"),
     manager: ProgramManager = Depends(get_manager_from_main),
     ):
+    action = body.action
+    
     # 从数据库中验证程序ID是否存在
     try:
         with DataBase(database_path) as db:
