@@ -197,11 +197,6 @@ def start_program(
     Returns:
         dict: 包含启动状态和消息的字典，例如 {'status': 200, 'message': '程序ID为xxx的程序已启动'}
     """
-    for i in manager.get_status():
-        if i["id"] == program_id:
-            manager.get_instance(i["id"]).start() # type: ignore
-            return {"status": 200, "message": f"程序ID为{program_id}的程序已启动"}
-    
     if not os.path.exists(f"data/cmd/{program_id}/frpc"):
         raise HTTPException(
             status_code=404,
@@ -214,6 +209,11 @@ def start_program(
             detail={"status": 404, "message": f"程序ID为{program_id}的FRPC配置文件不存在"}
             )
     
+    for i in manager.get_status():
+        if i["id"] == program_id:
+            manager.get_instance(i["id"]).start() # type: ignore
+            return {"status": 200, "message": f"程序ID为{program_id}的程序已启动"}
+        
     manager.add_instance(
         id=program_id,
         frpc_path=f"data/cmd/{program_id}/frpc",
