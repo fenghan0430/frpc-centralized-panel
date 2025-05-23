@@ -1,18 +1,9 @@
+import os
 from typing import Dict, Type
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Path
 from entity.proxy import HTTPProxyConfig, HTTPSProxyConfig, STCPProxyConfig, SUDPProxyConfig, TCPMuxProxyConfig, TCPProxyConfig, UDPProxyConfig, XTCPProxyConfig
 from utils.ConfigManager import ConfigManager
-
-# 临时配置文件地址
-config_file = "temp_tool/test_config.toml"
-#
-
-config = ConfigManager(config_file)
-
-router = APIRouter(
-    prefix="/api/v1",
-    responses={404: {"description": "Not found"}},
-)
+from utils.database import DataBase
 
 PROXY_TYPE_MAP: Dict[str, Type] = {
     'tcp': TCPProxyConfig,
@@ -25,6 +16,89 @@ PROXY_TYPE_MAP: Dict[str, Type] = {
     'tcpmux': TCPMuxProxyConfig,
 }
 
+# 临时配置文件地址
+database_path = "data/data.db"
+#
+
+router = APIRouter(
+    prefix="/api/v1",
+    responses={404: {"description": "Not found"}},
+)
+
+def get_all_proxy():
+    """获取所有代理配置
+
+    Returns:
+        config (List[Dict[str, Any]]): 包含客户端id+代理配置的字典, 没有配置返回空字典
+    
+    Raises:
+        HTTPException: 
+            - 500: 数据库查询失败
+            - 500: 读取文件夹失败
+    """
+    # 数据库验证id存不存在, 防止未知id
+    # 从数据库得到一个可信的id列表
+    try:
+        with DataBase(database_path) as db:
+            results = db.query_program()
+            db_id = [str(result[0]) for result in results]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"status": 500, "message": f"数据库查询失败: {str(e)}"}
+        )
+    
+    if not db_id:
+        return []
+    
+    all_proxies = []
+    # 得到data/cmd/下的文件夹
+    cmd_path = os.path.join("data", "cmd")
+    if not os.path.exists(cmd_path):
+        return []
+    
+    try:
+        folder_names = [f for f in os.listdir(cmd_path) if os.path.isdir(os.path.join(cmd_path, f))]
+    except OSError as e:
+        raise HTTPException(
+            status_code=500, 
+            detail={"status": 500, "message": f"无法读取配置文件夹: {str(e)}"}
+            )
+    
+    for folder_name in folder_names:
+        # 验证文件夹名在不在db id, 如不在，跳过
+        if folder_name not in db_id:
+            # TODO: log
+            continue
+        
+        # 验证文件夹下有没有frpc.toml, 如没有，跳过
+        config_path = os.path.join(cmd_path, folder_name, "frpc.toml")
+        if not os.path.exists(config_path):
+            # TODO: log
+            continue
+        
+        # 加载config, 如果错误，跳过
+        try:
+            client_config_manager = ConfigManager(config_path)
+            client_config = client_config_manager.load_config()
+        except Exception:
+            # TODO: log
+            continue
+        
+        # 检查config.proxies是否为空, 如为空，跳过
+        if not client_config.proxies:
+            continue
+        
+        # 读取每一条proxy，添加上client_id, 值为cid
+        for proxy in client_config.proxies:
+            proxy_dict = proxy.model_dump(by_alias=True, exclude_none=True)
+            proxy_dict["client_id"] = int(folder_name)
+            # 添加到all_proxies
+            all_proxies.append(proxy_dict)
+    
+    # 返回all_proxies
+    return all_proxies
+
 @router.get("/proxy")
 async def getProxy():
     """获取所有隧道信息
@@ -32,23 +106,36 @@ async def getProxy():
     Returns:
         _type_: _description_
     """
-    client_config = config.load_config()
-    return_data = []
-    
-    if client_config.proxies == None:
-        return []
-    
-    for i in client_config.proxies:
-        return_data.append(i.model_dump(by_alias=True, exclude_none=True))
-    
-    return return_data
 
-@router.get("/proxy/{proxy_name}", status_code=200)
-async def get_proxy_by_name(proxy_name: str):
+    return get_all_proxy()
+
+@router.get("/proxy/{client_id}/{proxy_name}", status_code=200)
+async def get_proxy_by_name(
+    proxy_name: str = Path(..., description="隧道名称"),
+    client_id: int = Path(..., description="客户端ID"),
+    ):
     """
     获取指定 name 的隧道配置
     """
-    client_config = config.load_config()
+    # 数据库验证id存不存在, 防止未知id
+    # 从数据库得到一个可信的id列表
+    try:
+        with DataBase(database_path) as db:
+            results = db.query_program()
+            db_id = [result[0] for result in results]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"status": 500, "message": f"数据库查询失败: {str(e)}"}
+        )
+    
+    if client_id not in db_id:
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "无效的客户端ID"})
+    
+    if not os.path.isfile(f"data/cmd/{client_id}/frpc.toml"):
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "客户端ID对应的frpc.toml文件不存在"})
+    
+    client_config = ConfigManager(f"data/cmd/{client_id}/frpc.toml").load_config()
 
     # 没有任何隧道
     if not client_config.proxies:
@@ -68,11 +155,33 @@ async def get_proxy_by_name(proxy_name: str):
         detail={"status": 404, "message": f"未找到名为 {proxy_name} 的隧道"}
     )
 
-@router.patch("/proxy", status_code=200)
-async def update_proxy(data: dict):
+@router.patch("/proxy/{client_id}", status_code=200)
+async def update_proxy_by_name(
+    data: dict,
+    client_id: int = Path(..., description="客户端ID"),
+    ):
     """
     更新指定 name 的隧道配置
     """
+    # 数据库验证id存不存在, 防止未知id
+    # 从数据库得到一个可信的id列表
+    try:
+        with DataBase(database_path) as db:
+            results = db.query_program()
+            db_id = [result[0] for result in results]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"status": 500, "message": f"数据库查询失败: {str(e)}"}
+        )
+    
+    if client_id not in db_id:
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "无效的客户端ID"})
+    
+    if not os.path.isfile(f"data/cmd/{client_id}/frpc.toml"):
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "客户端ID对应的frpc.toml文件不存在"})
+    
+    config = ConfigManager(f"data/cmd/{client_id}/frpc.toml")
     
     if "type" not in data.keys():
         raise HTTPException(status_code=400, detail={"status": 400, "message": "请求体中缺少type字段"})
@@ -134,8 +243,11 @@ async def update_proxy(data: dict):
 
     return {"status": 200, "message": f"更新隧道 {proxy_name} 成功"}
 
-@router.post("/proxy", status_code=201)
-async def newProxy(data: dict):
+@router.post("/proxy/{client_id}", status_code=201)
+async def newProxy(
+    data: dict,
+    client_id: int = Path(..., description="客户端ID"),
+    ):
     """_summary_
 
     Args:
@@ -144,6 +256,25 @@ async def newProxy(data: dict):
     Returns:
         _type_: _description_
     """
+    # 数据库验证id存不存在, 防止未知id
+    # 从数据库得到一个可信的id列表
+    try:
+        with DataBase(database_path) as db:
+            results = db.query_program()
+            db_id = [result[0] for result in results]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"status": 500, "message": f"数据库查询失败: {str(e)}"}
+        )
+    
+    if client_id not in db_id:
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "无效的客户端ID"})
+    
+    if not os.path.isfile(f"data/cmd/{client_id}/frpc.toml"):
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "客户端ID对应的frpc.toml文件不存在"})
+    
+    config = ConfigManager(f"data/cmd/{client_id}/frpc.toml")
     
     if "type" not in data.keys():
         raise HTTPException(status_code=400, detail={"status": 400, "message": "请求体中缺少type字段"})
@@ -192,8 +323,11 @@ async def newProxy(data: dict):
 
     return {"status": 201, "message": f"创建{new_proxy_config.type_}隧道{new_proxy_config.name}成功"}
 
-@router.delete("/proxy/{proxy_name}", status_code=200)
-async def delete_proxy(proxy_name: str):
+@router.delete("/proxy/{client_id}/{proxy_name}", status_code=200)
+async def delete_proxy_by_name(
+    proxy_name: str = Path(..., description="隧道ID"),
+    client_id: int = Path(..., description="客户端ID"),
+    ):
     """删除指定的隧道
 
     Args:
@@ -202,6 +336,25 @@ async def delete_proxy(proxy_name: str):
     Returns:
         dict: 删除结果的状态信息
     """
+    # 数据库验证id存不存在, 防止未知id
+    # 从数据库得到一个可信的id列表
+    try:
+        with DataBase(database_path) as db:
+            results = db.query_program()
+            db_id = [result[0] for result in results]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"status": 500, "message": f"数据库查询失败: {str(e)}"}
+        )
+    
+    if client_id not in db_id:
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "无效的客户端ID"})
+    
+    if not os.path.isfile(f"data/cmd/{client_id}/frpc.toml"):
+        raise HTTPException(status_code=400, detail={"status": 404, "message": "客户端ID对应的frpc.toml文件不存在"})
+    
+    config = ConfigManager(f"data/cmd/{client_id}/frpc.toml")
     client_config = config.load_config()
     
     if client_config.proxies is None or not client_config.proxies:
