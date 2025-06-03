@@ -2,6 +2,8 @@ import os
 import shutil
 from fastapi import APIRouter, Depends, Form, HTTPException, Path
 from pydantic import BaseModel, Field
+import requests
+from utils.ConfigManager import ConfigManager
 from utils.database import DataBase
 from utils.function_from_main import get_manager_from_main
 from utils.program_manager import ProgramManager
@@ -9,7 +11,7 @@ from utils.program_manager import ProgramManager
 # test
 database_path = "data/data.db"
 
-ACTION_LIST = ["start", "stop", "restart"]
+ACTION_LIST = ["start", "stop", "restart", "reload"]
 
 router = APIRouter(
     prefix="/api/v1",
@@ -250,6 +252,85 @@ async def stop_program(
                 )
     return {"status": 204, "message": f"程序ID为{program_id}未在运行，无需停止"}
 
+async def reload_program(
+    program_id: str,
+    manager: ProgramManager
+):
+    """重新加载指定程序的配置文件
+
+    Args:
+        program_id (str): 需要重载的程序ID
+        manager (ProgramManager): 程序管理器实例
+
+    Returns:
+        dict: 包含状态和消息的字典
+    
+    Raises:
+        HTTPException: 当程序未运行、配置文件缺失或重载失败时抛出异常
+    """
+    # 检查程序是否正在运行
+    status = manager.get_status()
+    for i in status:
+        if i['id'] == program_id and i['status'] == "运行":
+            break
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail={"status": 422, "message": f"程序 {program_id} 未运行"}
+        )
+
+    # 检查配置文件是否存在
+    if not os.path.isfile(f"data/cmd/{program_id}/frpc.toml"):
+        raise HTTPException(
+            status_code=422,
+            detail={"status": 422, "message": f"程序 {program_id} 没有配置文件"}
+        )
+    
+    try:
+        config = ConfigManager(f"data/cmd/{program_id}/frpc.toml")
+        client_config = config.load_config()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"status": 500, "message": f"无法读取配置文件: {str(e)}"}
+        )
+    
+    is_have_web_config = client_config.webServer and \
+        client_config.webServer.addr and \
+        client_config.webServer.port and \
+        client_config.webServer.user and \
+        client_config.webServer.password
+    
+    if not is_have_web_config:
+        raise HTTPException(
+            status_code=422,
+            detail={"status": 422, "message":"无法reload, webserver未配置"}
+        )
+    else:
+        addr = client_config.webServer.addr # type: ignore
+        port = client_config.webServer.port # type: ignore
+        user = client_config.webServer.user # type: ignore
+        password = client_config.webServer.password # type: ignore
+    
+    try:
+        response = requests.get(f"http://{addr}:{port}/api/reload", auth=(user, password)) # type: ignore
+    except Exception as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"status": 422, "message":"无法reload, 访问webserver失败。%s"%str(e)}
+        )
+    
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "status": "502", 
+                "message": f"使用frpc reload失败，错误码{response.status_code}, 内容：{response.text[:200].strip()}。"
+            }
+        )
+    
+    return {"status": 200, "message": "重载成功"}
+
 class ProgramControllerResponse(BaseModel):
     action: str = Field(..., description="操作类型，支持 start, stop, restart")
 
@@ -296,3 +377,6 @@ async def program_controller(
         await stop_program(program_id, manager)
         msg = start_program(program_id, manager)
         return msg
+    
+    if action == "reload":
+        return await reload_program(program_id, manager)
