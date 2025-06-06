@@ -343,7 +343,6 @@ def new_proxy(client_id: str, data: str) -> dict:
             return {
                 "status": "失败",
                 "message": "客户端ID格式错误",
-                "data": None
             }
     
     # 从数据库得到一个可信的id列表
@@ -355,21 +354,18 @@ def new_proxy(client_id: str, data: str) -> dict:
         return {
             "status": "成功",
             "message": f"数据库查询失败: {str(e)}",
-            "data": None
         }
     
     if client_id not in db_id:
         return {
             "status": "失败",
             "message": f"客户端{client_id}不存在",
-            "data": None
         }
     
     if not os.path.isfile(f"data/cmd/{client_id}/frpc.toml"):
         return {
             "status": "失败",
             "message": f"客户端{client_id}对应的frpc配置文件不存在",
-            "data": None
         }
     
     try:
@@ -378,21 +374,18 @@ def new_proxy(client_id: str, data: str) -> dict:
         return {
             "status": "失败",
             "message": f"data json解析失败, 错误内容：{str(e)}",
-            "data": None
         }
     
     if "type" not in data_dict.keys():
         return {
             "status": "失败",
             "message": f"请求体中缺少type字段",
-            "data": None
         }
     
     if data_dict["type"] not in PROXY_TYPE_MAP.keys():
         return {
             "status": "失败",
             "message": f"类型{data_dict['type']}不是一个有效的类型",
-            "data": None
         }
     
     config = ConfigManager(f"data/cmd/{client_id}/frpc.toml")
@@ -404,7 +397,6 @@ def new_proxy(client_id: str, data: str) -> dict:
         return {
             "status": "失败",
             "message": f"配置文件格式不正确: {str(e)}",
-            "data": None,
         }
     
     # 检测
@@ -418,7 +410,6 @@ def new_proxy(client_id: str, data: str) -> dict:
             return {
                 "status": "失败",
                 "message": f"名字{new_proxy_config.name}已经被占用",
-                "data": None,
             }
         # 检测tcp, udp端口是否重复
         if data_dict["type"] in ['tcp', 'udp'] and i.type_ in ['tcp', 'udp']:
@@ -426,7 +417,6 @@ def new_proxy(client_id: str, data: str) -> dict:
                 return {
                     "status": "失败",
                     "message": "remotePort为空,不支持这样的写法",
-                    "data": None,
                 }
             if i.remotePort == None: # type: ignore
                 continue
@@ -434,7 +424,6 @@ def new_proxy(client_id: str, data: str) -> dict:
                 return {
                     "status": "失败",
                     "message": f"端口{new_proxy_config.remotePort}已经被占用",
-                    "data": None,
                 }
         # 检测http, https绑定域名是否重复
         if data_dict["type"] in ['http', 'https'] and i.type_ in ['http', 'https']:
@@ -444,7 +433,6 @@ def new_proxy(client_id: str, data: str) -> dict:
                 return {
                     "status": "失败",
                     "message": "customDomains为空,不支持这样的写法",
-                    "data": None,
                 }
             for domain in i.customDomains: # type: ignore
                 for domain2 in new_proxy_config.customDomains: # type: ignore
@@ -452,7 +440,6 @@ def new_proxy(client_id: str, data: str) -> dict:
                         return {
                             "status": "失败",
                             "message": f"域名{domain2}已经被{i.name}占用",
-                            "data": None,
                         }
     # 添加隧道到配置文件
     client_config.proxies.append(new_proxy_config)
@@ -460,10 +447,10 @@ def new_proxy(client_id: str, data: str) -> dict:
     
     return {"status": "成功", "message": f"隧道 {new_proxy_config.name} 创建成功"}
 
-def update_proxy_by_name(data: str) -> dict:
+def update_proxy_by_name(client_id: str, data: str) -> dict:
     """修改隧道  
 
-    数据的格式：  
+    数据(data参数)的格式：  
     ```json
     {
         "name": "ssh-t4",
@@ -474,52 +461,151 @@ def update_proxy_by_name(data: str) -> dict:
     }
     ```
     
-    - name: 隧道名称
-    - type: 隧道类型
-    - localIp: 本地IP地址
-    - localPort: 本地端口
-    - remotePort: 远程端口  
+    - `name`: 隧道名称，需要是存在的隧道
+    - `type`: 隧道类型，必须和原隧道一样，不支持修改
+    - `localIp`: 本地IP地址
+    - `localPort`: 本地端口
+    - `remotePort`: 远程端口  
     
-    要修改的数据的name必须存在才能修改
 
     Args:
+        client_id (str): 客户端ID
         data (str): 隧道数据json字符串
 
     Returns:
         dict: 格式为 `{"status": "成功"|"失败", "message": "内容"}` 的字典
     """
+    
+    if isinstance(client_id, int):
+        try:
+            client_id = str(client_id)
+        except ValueError:
+            return {
+                "status": "失败",
+                "message": "客户端ID格式错误",
+            }
+    
+    # 从数据库得到一个可信的id列表
     try:
-        new_proxy = Proxy.model_validate_json(data)
+        with DataBase(database_path) as db:
+            results = db.query_program()
+            db_id = [str(result[0]) for result in results]
+    except Exception as e:
+        return {
+            "status": "成功",
+            "message": f"数据库查询失败: {str(e)}",
+        }
+    
+    if client_id not in db_id:
+        return {
+            "status": "失败",
+            "message": f"客户端{client_id}不存在",
+        }
+    
+    if not os.path.isfile(f"data/cmd/{client_id}/frpc.toml"):
+        return {
+            "status": "失败",
+            "message": f"客户端{client_id}对应的frpc配置文件不存在",
+        }
+    
+    config = ConfigManager(f"data/cmd/{client_id}/frpc.toml")
+    
+    try:
+        data_dict = json.loads(data)
+    except json.JSONDecodeError as e:
+        return {
+            "status": "失败",
+            "message": f"data json解析失败, 错误内容：{str(e)}",
+        }
+    
+    if "type" not in data_dict.keys():
+        return {
+            "status": "失败",
+            "message": f"请求体中缺少type字段",
+        }
+    
+    if "name" not in data_dict.keys():
+        return {
+            "status": "失败",
+            "message": f"请求体中缺少name字段",
+        }
+    
+    proxy_name = data_dict['name']
+    
+    if data_dict["type"] not in PROXY_TYPE_MAP.keys():
+        return {
+            "status": "失败",
+            "message": f"类型{data_dict['type']}不是一个有效的类型",
+        }
+    
+    client_config = config.load_config()
+    if not client_config.proxies:
+        return {
+            "status": "失败",
+            "message": f"客户端{client_id}下找不到{data_dict['name']}隧道",
+        }
+
+    # 查找要更新的隧道
+    for idx, proxy in enumerate(client_config.proxies):
+        if proxy.name == proxy_name:
+            old_proxy = proxy
+            target_index = idx
+            break
+    else:
+        return {
+            "status": "失败",
+            "message": f"客户端{client_id}下找不到{data_dict['name']}隧道",
+        }
+    
+    if "type" in data and data_dict["type"] != old_proxy.type_:
+        return {
+            "status": "失败",
+            "message": f"不支持修改隧道类型, 旧隧道为: {old_proxy.type_}, 新隧道为: {data_dict['type']}",
+        }
+    
+    # 合并旧数据与新传入字段，并进行校验
+    merged = old_proxy.model_dump()
+    merged.update(data_dict)
+    try:
+        updated_proxy = PROXY_TYPE_MAP[old_proxy.type_](**merged)
     except Exception as e:
         return {
             "status": "失败",
             "message": f"数据格式错误, 错误内容：{str(e)}",
         }
     
-    if new_proxy.name not in ["ssh-t4", "mc-server"]:
-        return {
-            "status": "失败",
-            "message": f"隧道名称 {new_proxy.name} 不存在"
-        }
+    # 唯一性检查（跳过自身）
+    for i, other in enumerate(client_config.proxies):
+        if i == target_index:
+            continue
+        # 名称冲突
+        if updated_proxy.name == other.name:
+            return {
+                "status": "失败",
+                "message": f"名字{updated_proxy.name}已经被占用",
+            }
+        # tcp/udp 端口冲突
+        if old_proxy.type_ in ['tcp', 'udp'] and other.type_ in ['tcp', 'udp']:
+            if updated_proxy.remotePort and other.remotePort == updated_proxy.remotePort: # type: ignore
+                return {
+                    "status": "失败",
+                    "message": f"端口{updated_proxy.remotePort}已经被占用",
+                }
+        # http/https 域名冲突
+        if old_proxy.type_ in ['http', 'https'] and other.type_ in ['http', 'https']:
+            if updated_proxy.customDomains:
+                for d in updated_proxy.customDomains:
+                    if other.customDomains and d in other.customDomains: # type: ignore
+                        return {
+                                "status": "失败",
+                                "message": f"域名{d}已经被{other.name}占用",
+                            }
+
+    # 应用更新并保存
+    client_config.proxies[target_index] = updated_proxy
+    config.save_config(client_config)
     
-    if new_proxy.type_ not in ['tcp', 'udp']:
-        return {
-            "status": "失败",
-            "message": f"隧道类型 {new_proxy.type_} 不支持"
-        }
-    
-    try:
-        if new_proxy.name == "ssh-t4" and new_proxy.remotePort == 25565:
-            raise Exception()
-        if new_proxy.name == "mc-server" and new_proxy.remotePort == 1022:
-            raise Exception()
-    except Exception:
-        return {
-            "status": "失败",
-            "message": f"端口 {new_proxy.remotePort} 不可用"
-        }
-    
-    return {"status": "成功", "message": f"隧道 {new_proxy.name} 修改成功"}
+    return {"status": "成功", "message": f"隧道 {updated_proxy.name} 修改成功"}
 
 def delete_proxy_by_name(proxy_name: str) -> dict:
     """根据隧道名删除隧道
