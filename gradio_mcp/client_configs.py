@@ -50,7 +50,34 @@ def check_admin_ui_port_conflict(
 
 
 def get_client_config_by_id(program_id: str) -> dict:
-    """根据ID获取单个客户端配置"""
+    """根据ID获取单个客户端配置
+    
+    注意这里修改的不是隧道(proxy)和观察者(visitor)的配置信息，client_configs接口仅处理client与server的连接配置。  
+    
+    返回格式(不是全部参数):
+    ```json
+    {
+        "status": "成功",
+        "message": "获取客户端配置成功",
+        "data": {
+            serverAddr = "127.0.0.1",
+            serverPort = 25566,
+        }
+    }
+    ```
+    
+    - `status`: 请求状态，成功或失败
+    - `message`: 请求结果的描述信息
+    - `data`: 客户端配置
+        - `serverAddr`: 服务器地址
+        - `serverPort`: 服务器端
+    
+    Args:
+        program_id (str): 客户端ID
+    
+    Returns:
+        dict: 包含请求状态、消息和客户端配置的字典
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
 
@@ -81,8 +108,33 @@ def get_client_config_by_id(program_id: str) -> dict:
     }
 
 
-def new_client_config(program_id: str, payload: str) -> dict:
-    """新建客户端配置，payload 为 JSON 字符串"""
+def new_client_config(program_id: str, data: str) -> dict:
+    """创建指定客户端ID的配置文件
+    
+    注意这里修改的不是隧道(proxy)和观察者(visitor)的配置信息，client_configs接口仅处理client与server的连接配置。  
+    
+    请求示例(不是全部参数):  
+    - program_id = "0"
+    - data = {"serverAddr": "127.0.0.1", "serverPort": 7000}  
+    
+    返回格式:
+    ```json
+    {
+        "status": "成功",
+        "message": "获取客户端配置成功",
+    }
+    ```
+    
+    - `status`: 请求状态，成功或失败
+    - `message`: 请求结果的描述信息
+    
+    Args:
+        program_id (str): 客户端ID
+        data (str): 客户端配置数据
+    
+    Returns:
+        dict: 包含请求状态、消息和客户端配置的字典
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
 
@@ -105,7 +157,7 @@ def new_client_config(program_id: str, payload: str) -> dict:
         return {"status": "失败", "message": f"配置文件已存在: {cfg_file}"}
 
     try:
-        body = json.loads(payload)
+        body = json.loads(data)
         cfg = ClientConfig(**body)
     except json.JSONDecodeError as e:
         return {"status": "失败", "message": f"JSON 解析失败: {e}"}
@@ -129,8 +181,33 @@ def new_client_config(program_id: str, payload: str) -> dict:
     return {"status": "成功", "message": f"客户端{program_id}配置创建成功"}
 
 
-def update_client_config(program_id: str, payload: str) -> dict:
-    """更新客户端配置，payload 为 JSON 字符串"""
+def update_client_config(program_id: str, data: str) -> dict:
+    """修改指定客户端ID的配置文件
+    
+    注意这里修改的不是隧道(proxy)和观察者(visitor)的配置信息，client_configs接口仅处理client与server的连接配置。  
+    
+    请求示例(不是全部参数):  
+    - program_id = "0"
+    - data = {"serverAddr": "127.0.0.1", "serverPort": 7000}  
+    
+    返回格式:
+    ```json
+    {
+        "status": "成功",
+        "message": "获取客户端配置成功",
+    }
+    ```
+    
+    - `status`: 请求状态，成功或失败
+    - `message`: 请求结果的描述信息
+    
+    Args:
+        program_id (str): 客户端ID
+        data (str): 新的客户端配置数据
+    
+    Returns:
+        dict: 包含请求状态、消息和客户端配置的字典
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
 
@@ -148,7 +225,7 @@ def update_client_config(program_id: str, payload: str) -> dict:
         return {"status": "失败", "message": f"配置文件不存在: {cfg_file}"}
 
     try:
-        body = json.loads(payload)
+        body = json.loads(data)
         new_cfg = ClientConfig(**body)
     except json.JSONDecodeError as e:
         return {"status": "失败", "message": f"JSON 解析失败: {e}"}
@@ -170,7 +247,29 @@ def update_client_config(program_id: str, payload: str) -> dict:
 
 
 def delete_client_config(program_id: str) -> dict:
-    """删除客户端配置"""
+    """删除指定客户端ID的配置  
+    
+    **注意**：这里修改的不是隧道(proxy)和观察者(visitor)的配置信息，client_configs接口仅处理client与server的连接配置。  
+    
+    **注意**：删除行为会导致数据丢失，一定要用户确认后再删除!  
+    
+    返回格式:
+    ```json
+    {
+        "status": "成功",
+        "message": "获取客户端配置成功",
+    }
+    ```
+    
+    - `status`: 请求状态，成功或失败
+    - `message`: 请求结果的描述信息
+    
+    Args:
+        program_id (str): 客户端
+
+    Returns:
+        dict: 操作结果
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
 

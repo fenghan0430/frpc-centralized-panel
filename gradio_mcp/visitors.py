@@ -15,7 +15,41 @@ VISITOR_TYPE_MAP: Dict[str, Type] = {
 }
 
 def get_all_visitors() -> dict:
-    """获取所有观察者，返回 {status, message, data}"""
+    """获取所有观察者  
+    
+    返回的格式为：
+    ```json
+    {
+        "status": "成功",
+        "message": "获取客户端列表成功",
+        "data": [
+            {
+                "program_id": 0,
+                "name": "stcp1-visitor",
+                "type": "stcp",
+                "serverName": "stcp",
+                "secretKey": "key",
+                "bindAddr" = "127.0.0.1",
+                "bindPort" = 6000
+            }
+        ]
+    }
+    ```
+    
+    - `status`: 操作状态，成功或失败
+    - `message`: 操作信息
+    - `data`: 客户端列表，格式为json数组，每个元素包含以下
+        - `program_id`: 客户端ID
+        - `name`: 观察者名称
+        - `type`: 观察者类型
+        - `serverName`: 服务名称
+        - `secretKey`: 观察者的认证密钥，用于安全通信  
+        - `bindAddr`: 绑定到本地的IP
+        - `bindPort`: 绑定到本地的端口号  
+    
+    Returns:
+        dict: 包含状态和信息的json, 格式为`{"status": "成功"|"失败", "message": "消息", "data": 数据, json格式, 如失败data为None}`
+    """
     try:
         with DataBase(database_path) as db:
             results = db.query_program()
@@ -55,7 +89,42 @@ def get_all_visitors() -> dict:
 
 
 def get_visitors_by_program_id(program_id: str) -> dict:
-    """根据 program_id 获取该程序下的所有观察者"""
+    """获取指定客户端ID下的观察者配置文件  
+    
+    返回的格式为：
+        ```json
+        {
+            "status": "成功",
+            "message": "获取客户端列表成功",
+            "data": [
+                {
+                    "name": "stcp1-visitor",
+                    "type": "stcp",
+                    "serverName": "stcp",
+                    "secretKey": "key",
+                    "bindAddr" = "127.0.0.1",
+                    "bindPort" = 6000
+                }
+            ]
+        }
+        ```
+
+        - `status`: 操作状态，成功或失败
+        - `message`: 操作信息
+        - `data`: 客户端列表，格式为json数组，每个元素包含以下
+            - `name`: 观察者名称
+            - `type`: 观察者类型
+            - `serverName`: 服务名称
+            - `secretKey`: 观察者的认证密钥，用于安全通信  
+            - `bindAddr`: 绑定到本地的IP
+            - `bindPort`: 绑定到本地的端口号
+    
+    Args:
+        program_id (str): 客户端ID
+    
+    Returns:
+        dict: 包含状态和信息的json, 格式为`{"status": "成功"|"失败", "message": "消息", "data": 数据, json格式, 如失败data为None}`
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
 
@@ -77,7 +146,43 @@ def get_visitors_by_program_id(program_id: str) -> dict:
 
 
 def get_visitor_by_name(program_id: str, visitor_name: str) -> dict:
-    """根据 visitor_name 获取单条观察者"""
+    """获取指定客户端ID下的指定name的观察者配置文件  
+
+    返回的格式为：
+    ```json
+    {
+        "status": "成功",
+        "message": "获取观察者成功",
+        "data": [
+            {
+                "name": "stcp1-visitor",
+                "type": "stcp",
+                "serverName": "stcp",
+                "secretKey": "key",
+                "bindAddr" = "127.0.0.1",
+                "bindPort" = 6000
+            }
+        ]
+    }
+    ```
+    
+    - `status`: 操作状态，成功或失败
+    - `message`: 操作信息
+    - `data`: 客户端列表，格式为json数组，每个元素包含以下
+        - `name`: 观察者名称
+        - `type`: 观察者类型
+        - `serverName`: 服务名称
+        - `secretKey`: 观察者的认证密钥，用于安全通信  
+        - `bindAddr`: 绑定到本地的IP
+        - `bindPort`: 绑定到本地的端口号 
+    
+    Args:
+        program_id (str): 程序ID
+        visitor_name (str): 观察者名称
+    
+    Returns:
+        dict: 包含状态和信息的json, 格式为`{"status": "成功"|"失败", "message": "消息", "data": 数据, json格式, 如失败data为None}`
+    """
     resp = get_visitors_by_program_id(program_id)
     if resp["status"] != "成功":
         return resp
@@ -88,7 +193,33 @@ def get_visitor_by_name(program_id: str, visitor_name: str) -> dict:
 
 
 def new_visitor(program_id: str, data: str) -> dict:
-    """新建观察者，data 为 JSON 字符串"""
+    """新建指定客户端 ID 下的观察者配置
+    
+    传入参数示例(不是全部):
+    - program_id: 客户端 ID，整数或字符串
+    - data: 新观察者配置，JSON 字符串。必须包含以下字段：
+        - name: 观察者名称，和要修改的name一致
+        - type: 观察者类型，和要修改的type一致
+        - serverName: 服务端名称，用于关联后端服务
+        - secretKey: 认证密钥，用于安全通信
+        - bindAddr: 绑定的本地 IP 地址（例如 "127.0.0.1"）
+        - bindPort: 绑定的本地端口（整数, 65535 以内）
+    
+    返回的格式:
+    ```json
+    {
+        "status": "成功"|"失败",
+        "message": "提示信息"
+    }
+    ```
+    
+    Args:
+        program_id (str): 客户端 ID
+        data (str): 新观察者配置的 JSON 字符串
+    
+    Returns:
+        dict: 操作结果，格式 `{"status": "成功"|"失败", "message": "具体信息"}`
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
     # 验证 program_id
@@ -135,7 +266,33 @@ def new_visitor(program_id: str, data: str) -> dict:
 
 
 def update_visitor_by_name(program_id: str, data: str) -> dict:
-    """修改观察者，data 为 JSON 字符串，必须包含 name 和 type"""
+    """修改指定客户端 ID 下的观察者配置
+    
+    传入参数示例(不是全部):
+    - program_id: 客户端 ID，整数或字符串
+    - data: 观察者配置，JSON 字符串。必须包含以下字段：
+        - name: 观察者名称，和要修改的name一致
+        - type: 观察者类型，和要修改的type一致
+        - serverName: 服务名称
+        - secretKey: 认证密钥，用于安全通信
+        - bindAddr: 绑定的本地 IP 地址（例如 "127.0.0.1"）
+        - bindPort: 绑定的本地端口（整数, 65535 以内）
+    
+    返回的格式:
+    ```json
+    {
+        "status": "成功"|"失败",
+        "message": "提示信息"
+    }
+    ```
+    
+    Args:
+        program_id (str): 客户端 ID
+        data (str): 新观察者配置的 JSON 字符串
+    
+    Returns:
+        dict: 操作结果，格式 `{"status": "成功"|"失败", "message": "具体信息"}`
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
     try:
@@ -196,7 +353,23 @@ def update_visitor_by_name(program_id: str, data: str) -> dict:
 
 
 def delete_visitor_by_name(program_id: str, visitor_name: str) -> dict:
-    """删除指定观察者"""
+    """删除指定观察者
+    
+    返回的格式:
+    ```json
+    {
+        "status": "成功"|"失败",
+        "message": "提示信息"
+    }
+    ```
+    
+    Args:
+        program_id (str): 程序ID
+        visitor_name (str): 观察者名称   
+    
+    Returns:
+        dict: 返回操作结果
+    """
     if isinstance(program_id, int):
         program_id = str(program_id)
     try:
