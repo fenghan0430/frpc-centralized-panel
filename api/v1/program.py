@@ -160,8 +160,8 @@ async def delete_program(
                     status_code=404,
                     detail={"status": 404, "message": f"未找到ID为{program_id}的程序"}
                 )
-    except HTTPException:
-        raise
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
             status_code=500,
