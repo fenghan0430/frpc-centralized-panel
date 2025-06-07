@@ -1,3 +1,6 @@
+import atexit
+import signal
+import sys
 import gradio as gr
 from gradio_mcp.log import logger
 from gradio_mcp.proxies import (
@@ -21,19 +24,46 @@ from gradio_mcp.programs import (
     program_controller,
     delete_program
 )
+from gradio_mcp.client_configs import (
+    get_client_config_by_id,
+    new_client_config,
+    update_client_config,
+    delete_client_config
+)
+from utils.program_manager import ProgramManager
     
 def page_chat_ai():
     gr.Markdown("# 这是AI 对话")
 
 def page_client_configs():
-    gr.Markdown("# 这是Frpc客户端配置文件配置")
+    gr.Markdown("# 客户端配置文件配置")
+    gr.Markdown("## get_client_config_by_id")
+    gr.Interface(
+        fn=get_client_config_by_id,
+        inputs="text",
+        outputs="text"
+    )
     
-    # gr.Markdown("## get_all_clients")
-    # gr.Interface(
-    #     fn = get_all_clients,
-    #     inputs = None,
-    #     outputs = "text"
-    # )
+    gr.Markdown("## new_client_config")
+    gr.Interface(
+        fn=new_client_config,
+        inputs=["text", "text"],
+        outputs="text"
+    )
+    
+    gr.Markdown("## update_client_config")
+    gr.Interface(
+        fn=update_client_config,
+        inputs=["text", "text"],
+        outputs="text"
+    )
+    
+    gr.Markdown("## delete_client_config")
+    gr.Interface(
+        fn=delete_client_config,
+        inputs="text",
+        outputs="text"
+    )
 
 def page_proxies():
     gr.Markdown("## get_all_proxy")
@@ -158,10 +188,20 @@ with gr.Blocks() as demo:
         with gr.TabItem("客户端配置", id="page4"):
             page_programs()
         with gr.TabItem("客户端配置文件配置", id="page5"):
-            # page_client_configs
-            pass
+            page_client_configs()
 
-# TODO: 退出关闭线程
+# TODO: 清除上传缓存
+
+def _cleanup_before_exit(type_: str = ""):
+    logger.info(f"收到退出信号{type_}，开始清理工作…")
+    program_manager: ProgramManager = ProgramManager()
+    program_manager.stop_all()
+
+# 在程序正常退出时也执行一次清理
+atexit.register(_cleanup_before_exit)
+# 捕获 kill (SIGTERM)
+signal.signal(signal.SIGTERM, lambda signum, frame: (_cleanup_before_exit("SIGTERM"), sys.exit(0)))
+
 
 if __name__ == "__main__":
     demo.launch(
