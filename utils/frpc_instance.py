@@ -1,7 +1,7 @@
 import subprocess
 import threading
 import asyncio
-from utils.function_from_main import get_logger_from_main
+import logging
 
 class FrpcInstance:
     def __init__(self, executable: str, config_path: str, id: str):
@@ -17,7 +17,7 @@ class FrpcInstance:
         self.process = None
         self.stdout_thread = None
         self.stderr_thread = None
-        self.logger = get_logger_from_main()
+        self.logger = logging.getLogger("utils.frpc_instance")
         self.id = id
 
     def start(self):

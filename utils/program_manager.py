@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Dict, List
 from utils.frpc_instance import FrpcInstance
-from utils.function_from_main import get_logger_from_main
+import logging
 
 class ProgramManager:
     """
@@ -22,7 +22,7 @@ class ProgramManager:
         初始化 ProgramManger，创建空实例列表。
         """
         self.instances = []
-        self.logger = get_logger_from_main()
+        self.logger = logging.getLogger("utils.program_manager")
 
     def add_instance(self, id: str, frpc_path: str, config_path: str):
         """

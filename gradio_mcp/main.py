@@ -1,4 +1,5 @@
 import gradio as gr
+from gradio_mcp.log import logger
 from gradio_mcp.proxies import (
     get_all_proxy,
     get_proxy_by_name,
@@ -7,16 +8,24 @@ from gradio_mcp.proxies import (
     update_proxy_by_name,
     delete_proxy_by_name
 )
+from gradio_mcp.visitors import (
+    get_all_visitors,
+    get_visitors_by_program_id,
+    get_visitor_by_name,
+    new_visitor,
+    update_visitor_by_name,
+    delete_visitor_by_name
+)
 from gradio_mcp.programs import (
     list_programs,
     program_controller,
-    delete_program,
+    delete_program
 )
-
+    
 def page_chat_ai():
     gr.Markdown("# 这是AI 对话")
 
-def page_clients():
+def page_client_configs():
     gr.Markdown("# 这是Frpc客户端配置文件配置")
     
     # gr.Markdown("## get_all_clients")
@@ -70,7 +79,49 @@ def page_proxies():
     )
 
 def page_visitors():
-    gr.Markdown("# 观察者(visitors)配置")
+    gr.Markdown("# 观察者(visitors)接口列表")
+
+    gr.Markdown("## get_all_visitors")
+    gr.Interface(
+        fn=get_all_visitors,
+        inputs=None,
+        outputs="text"
+    )
+    
+    gr.Markdown("## get_visitors_by_program_id")
+    gr.Interface(
+        fn=get_visitors_by_program_id,
+        inputs="text",
+        outputs="text"
+    )
+    
+    gr.Markdown("## get_visitor_by_name")
+    gr.Interface(
+        fn=get_visitor_by_name,
+        inputs=["text", "text"],
+        outputs="text"
+    )
+
+    gr.Markdown("## new_visitor")
+    gr.Interface(
+        fn=new_visitor,
+        inputs=["text", "text"],
+        outputs="text"
+    )
+
+    gr.Markdown("## update_visitor_by_name")
+    gr.Interface(
+        fn=update_visitor_by_name,
+        inputs=["text", "text"],
+        outputs="text"
+    )
+
+    gr.Markdown("## delete_visitor_by_name")
+    gr.Interface(
+        fn=delete_visitor_by_name,
+        inputs=["text", "text"],
+        outputs="text"
+    )
 
 def page_programs():
     gr.Markdown("# 客户端配置")
@@ -103,11 +154,14 @@ with gr.Blocks() as demo:
         with gr.TabItem("隧道(proxies)配置", id="page2"):
             page_proxies()
         with gr.TabItem("观察者(visitors)配置", id="page3"):
-            page_proxies()
+            page_visitors()
         with gr.TabItem("客户端配置", id="page4"):
-            page_clients()
+            page_programs()
         with gr.TabItem("客户端配置文件配置", id="page5"):
-            page_clients()
+            # page_client_configs
+            pass
+
+# TODO: 退出关闭线程
 
 if __name__ == "__main__":
     demo.launch(
