@@ -1,11 +1,6 @@
-from typing import List
-from pydantic import BaseModel, Field
 import json
-from gradio_mcp.programs import get_all_programs
-
 import os
 from typing import Dict, Type
-from fastapi import APIRouter, HTTPException, Path
 from entity.proxy import HTTPProxyConfig, HTTPSProxyConfig, STCPProxyConfig, SUDPProxyConfig, TCPMuxProxyConfig, TCPProxyConfig, UDPProxyConfig, XTCPProxyConfig
 from utils.ConfigManager import ConfigManager
 from utils.database import DataBase
@@ -610,7 +605,9 @@ def update_proxy_by_name(program_id: str, data: str) -> dict:
 def delete_proxy_by_name(program_id: str, proxy_name: str) -> dict:
     """根据隧道名删除隧道
 
-    根据隧道名删除隧道，如果隧道不存在则返回失败。
+    根据隧道名删除隧道，如果隧道不存在则返回失败。  
+    
+    注意: 使用这个函数之前一定要得到用户的肯定!丢失的数据无法复原!
     
     Args:
         program_id (str): 客户端ID
