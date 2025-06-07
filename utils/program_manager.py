@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Dict, List
 from utils.frpc_instance import FrpcInstance
 from utils.function_from_main import get_logger_from_main
@@ -7,7 +8,15 @@ class ProgramManager:
     FRPC 多实例管理器。
     用于统一管理多个 FRPC 实例的生命周期及状态。
     """
-
+    # 单例代码
+    _instance_lock = threading.Lock()
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(ProgramManager, "_instance"):
+            with ProgramManager._instance_lock:
+                if not hasattr(ProgramManager, "_instance"):
+                    ProgramManager._instance = object.__new__(cls)  
+        return ProgramManager._instance
+    
     def __init__(self):
         """
         初始化 ProgramManger，创建空实例列表。
