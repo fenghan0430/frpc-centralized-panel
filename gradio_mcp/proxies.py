@@ -7,6 +7,7 @@ from entity.proxy import HTTPProxyConfig, HTTPSProxyConfig, STCPProxyConfig, SUD
 from utils.ConfigManager import ConfigManager
 from utils.database import DataBase
 from utils.program_manager import ProgramManager
+import requests
 
 # 临时配置文件地址
 database_path = "data/data.db"
@@ -73,7 +74,7 @@ def check_proxy_status(ids: List[str] | None = None) -> dict:
             if cfg.proxies:
                 program_proxies_status = {}
                 for proxy in cfg.proxies:
-                    program_proxies_status[i["name"]] = "停止"
+                    program_proxies_status[proxy.name] = "停止"
             proxy_status[id] = program_proxies_status
             continue
         
@@ -87,10 +88,10 @@ def check_proxy_status(ids: List[str] | None = None) -> dict:
             logger.warning(f"check_proxy_status: id{id}没有配置webserver, 跳过检测")
             continue
         else:
-            addr = config.webServer.addr # type: ignore
-            port = config.webServer.port # type: ignore
-            user = config.webServer.user # type: ignore
-            password = config.webServer.password # type: ignore
+            addr = cfg.webServer.addr # type: ignore
+            port = cfg.webServer.port # type: ignore
+            user = cfg.webServer.user # type: ignore
+            password = cfg.webServer.password # type: ignore
 
         try:
             response = requests.get(f"http://{addr}:{port}/api/status", auth=(user, password)) # type: ignore
@@ -119,7 +120,7 @@ def check_proxy_status(ids: List[str] | None = None) -> dict:
         
         if cfg.proxies:
             for proxy in cfg.proxies:
-                if proxy not in program_proxies_status.keys():
+                if proxy.name not in program_proxies_status.keys():
                     program_proxies_status[proxy.name] = "未知"
         proxy_status[id] = program_proxies_status
     
@@ -222,13 +223,13 @@ def get_all_proxy():
         if not client_config.proxies:
             continue
         
-        # proxy_status = check_proxy_status([folder_name])
+        proxy_status = check_proxy_status([folder_name])
         
         # 读取每一条proxy，添加上program_id, 值为cid
         for proxy in client_config.proxies:
             proxy_dict = proxy.model_dump(by_alias=True, exclude_none=True)
             proxy_dict["program_id"] = int(folder_name)
-            # proxy_dict["status"] = proxy_status["status"]
+            proxy_dict["status"] = proxy_status[folder_name][proxy.name]
             # 添加到all_proxies
             all_proxies.append(proxy_dict)
     

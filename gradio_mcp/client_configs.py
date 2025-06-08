@@ -4,7 +4,6 @@ import os
 from entity.client import ClientConfig
 from utils.ConfigManager import ConfigManager
 from utils.database import DataBase
-from api.v1.client import check_admin_ui_port_conflict
 
 # 数据库和命令目录
 database_path = "data/data.db"

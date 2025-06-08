@@ -379,31 +379,47 @@ def new_program():
     """上传program的gradio界面"""
 
     def submit(gr_file: gr.File, name: str, description: str):
-        # try:
-        #     with DataBase(database_path) as db:
-        #         # 验证 name 是否重复
-        #         exist = db.query_program(name=name)
-        #         if exist:
-        #             raise gr.Error(f"程序名称“{name}”已存在")
-        #         program_id = db.insert_program(name=name, description=description)
-        #         print(gr_file.name + name + description) # type: ignore
-        # except Exception as e:
-        #     logger.error(f"数据库操作失败，错误信息：{str(e)}") 
-        #     raise gr.Error("数据库操作失败")
+        program_id = None
+        try:
+            try:
+                with DataBase(database_path) as db:
+                    # 验证 name 是否重复
+                    exist = db.query_program(name=name)
+                    if exist:
+                        raise gr.Error(f"程序名称“{name}”已存在")
+                    program_id = db.insert_program(name=name, description=description)
+            except Exception as e:
+                logger.error(f"数据库操作失败，错误信息：{str(e)}") 
+                raise gr.Error("数据库操作失败")
+            exe_path = gr_file.name  # type: ignore
+            
+            dest_dir = os.path.join("data", "cmd", str(program_id))
+            os.makedirs(dest_dir, exist_ok=True)
+            dest_exe_path = os.path.join(dest_dir, os.path.basename(exe_path))
+            
+            try:
+                shutil.copy2(exe_path, dest_exe_path)
+                os.chmod(dest_exe_path, 0o755)
+            except Exception as e:
+                logger.error(f"文件复制失败: {str(e)}")
+                raise gr.Error(f"文件复制失败")
+            
+            gr.Success("程序新建成功", duration=3)
+        except gr.Error as e:
+            logger.info("程序新建失败, 开始回退")
+            if program_id is not None:
+                try:
+                    with DataBase(database_path) as db:
+                        db.delete_program(program_id)
+                except Exception as e:
+                    logger.warning(f"回退时删除客户端{program_id}数据库数据错误")
+            if os.path.exists(os.path.join("data", "cmd", str(program_id))):
+                try:
+                    shutil.rmtree(os.path.join("data", "cmd", str(program_id)))
+                except Exception as e:
+                    logger.warning(f"回退时删除客户端{program_id}目录错误")
+            raise e # type: ignore
 
-        # exe_path = gr_file.name  # type: ignore
-        
-        # dest_dir = os.path.join("data", "cmd", str(program_id))
-        # os.makedirs(dest_dir, exist_ok=True)
-        # dest_exe_path = os.path.join(dest_dir, os.path.basename(exe_path))
-        # try:
-        #     shutil.copy2(exe_path, dest_exe_path)
-        # except Exception as e:
-        #     logger.error(f"文件复制失败: {str(e)}")
-        #     raise gr.Error(f"文件复制失败")
-        
-        gr.Success("程序新建成功", duration=3)
-    
     gr.Markdown("## 新建客户端")
 
     file_input = gr.File(label="拖动或点击上传frpc客户端")
