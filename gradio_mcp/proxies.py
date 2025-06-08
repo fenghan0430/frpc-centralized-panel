@@ -1,13 +1,18 @@
 import json
+import logging
+from math import e
 import os
-from typing import Dict, Type
+from typing import Dict, List, Type
 from entity.proxy import HTTPProxyConfig, HTTPSProxyConfig, STCPProxyConfig, SUDPProxyConfig, TCPMuxProxyConfig, TCPProxyConfig, UDPProxyConfig, XTCPProxyConfig
 from utils.ConfigManager import ConfigManager
 from utils.database import DataBase
+from utils.program_manager import ProgramManager
 
 # 临时配置文件地址
 database_path = "data/data.db"
 #
+logger = logging.getLogger("gradio_mcp.proxies")
+manager = ProgramManager()
 
 PROXY_TYPE_MAP: Dict[str, Type] = {
     'tcp': TCPProxyConfig,
@@ -19,6 +24,106 @@ PROXY_TYPE_MAP: Dict[str, Type] = {
     'xtcp': XTCPProxyConfig,
     'tcpmux': TCPMuxProxyConfig,
 }
+
+def check_proxy_status(ids: List[str] | None = None) -> dict:
+    # 从数据库得到一个可信的id列表
+    try:
+        with DataBase(database_path) as db:
+            results = db.query_program()
+            db_id = [str(result[0]) for result in results]
+    except Exception as e:
+        return {
+            "status": "失败",
+            "message": f"数据库查询失败: {str(e)}",
+            "data": None
+        }
+    # TODO: 检查start列表
+    if not ids:
+        ids = db_id
+    if len(ids) == 0:
+        return {
+            "status": "失败",
+            "message": f"传入的id列表为空",
+            "data": None
+        }
+    proxy_status = {}
+    # 处理列表中的客户端
+    for id in ids:
+        if id not in db_id:
+            logger.warning(f"check_proxy_status: id{id}不在数据库中，跳过检测")
+            continue
+        
+        if os.path.exists(f"data/cmd/{id}") and os.path.isfile(f"data/cmd/{id}/frpc.toml"):
+            try:
+                cfg = ConfigManager(f"data/cmd/{id}/frpc.toml").load_config()
+            except Exception as e:
+                logger.warning(f"check_proxy_status: id{id}加载配置文件出错: {str(e)}, 跳过检测")
+                continue
+        else:
+            logger.warning(f"check_proxy_status: id{id}未找到配置文件, 跳过检测")
+            continue
+        
+        is_program_work = False
+        status = manager.get_status()
+        for i in status:
+            if i['id'] == id and i['status'] == "运行":
+                is_program_work = True
+                break
+        if not is_program_work:
+            if cfg.proxies:
+                program_proxies_status = {}
+                for proxy in cfg.proxies:
+                    program_proxies_status[i["name"]] = "停止"
+            proxy_status[id] = program_proxies_status
+            continue
+        
+        is_have_web_config = cfg.webServer and \
+            cfg.webServer.addr and \
+            cfg.webServer.port and \
+            cfg.webServer.user and \
+            cfg.webServer.password
+
+        if not is_have_web_config:
+            logger.warning(f"check_proxy_status: id{id}没有配置webserver, 跳过检测")
+            continue
+        else:
+            addr = config.webServer.addr # type: ignore
+            port = config.webServer.port # type: ignore
+            user = config.webServer.user # type: ignore
+            password = config.webServer.password # type: ignore
+
+        try:
+            response = requests.get(f"http://{addr}:{port}/api/status", auth=(user, password)) # type: ignore
+        except Exception as e:
+            logger.warning(f"请求客户端{id}的webserver失败, 错误：{str(e)}，跳过检测")
+            continue
+        
+        if response.status_code != 200:
+            logger.warning(f"请求客户端{id}的webserver失败，错误码{response.status_code}, 内容：{response.text[:200].strip()}。跳过检测")
+            continue
+        
+        # 解析响应为json
+        try:
+            data = response.json()
+        except json.JSONDecodeError as e:
+            logger.warning(f"请求客户端{id}的webserver失败，错误：{str(e)}，跳过检测")
+            continue
+        
+        program_proxies_status = {}
+        for i in data.keys():
+            for i in data[i]:
+                if i["status"] == "running":
+                    program_proxies_status[i["name"]] = "运行"
+                else:
+                    program_proxies_status[i["name"]] = "错误"
+        
+        if cfg.proxies:
+            for proxy in cfg.proxies:
+                if proxy not in program_proxies_status.keys():
+                    program_proxies_status[proxy.name] = "未知"
+        proxy_status[id] = program_proxies_status
+    
+    return proxy_status
 
 def get_all_proxy():
     """获取所有隧道  
@@ -117,10 +222,13 @@ def get_all_proxy():
         if not client_config.proxies:
             continue
         
+        # proxy_status = check_proxy_status([folder_name])
+        
         # 读取每一条proxy，添加上program_id, 值为cid
         for proxy in client_config.proxies:
             proxy_dict = proxy.model_dump(by_alias=True, exclude_none=True)
             proxy_dict["program_id"] = int(folder_name)
+            # proxy_dict["status"] = proxy_status["status"]
             # 添加到all_proxies
             all_proxies.append(proxy_dict)
     

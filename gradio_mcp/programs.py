@@ -1,12 +1,15 @@
+import logging
 import os
 import shutil
 from utils.ConfigManager import ConfigManager
 from utils.database import DataBase
 from utils.program_manager import ProgramManager
+import gradio as gr
 
 # 临时配置文件地址
 database_path = "data/data.db"
 #
+logger = logging.getLogger("gradio_mcp.programs")
 
 ACTION_LIST = ["start", "stop", "restart", "reload"]
 
@@ -219,11 +222,13 @@ async def reload_program(program_id: str,) -> dict:
     global manager
     
     # 检查程序是否正在运行
+    is_program_work = False
     status = manager.get_status()
     for i in status:
         if i['id'] == program_id and i['status'] == "运行":
+            is_program_work = True
             break
-    else:
+    if not is_program_work:
         return {
             "status": "失败", 
             "message": f"程序 {program_id} 未运行"
@@ -369,3 +374,41 @@ async def program_controller(program_id: str, action: str,):
     
     if action == "reload":
         return await reload_program(program_id)
+
+def new_program():
+    """上传program的gradio界面"""
+
+    def submit(gr_file: gr.File, name: str, description: str):
+        # try:
+        #     with DataBase(database_path) as db:
+        #         # 验证 name 是否重复
+        #         exist = db.query_program(name=name)
+        #         if exist:
+        #             raise gr.Error(f"程序名称“{name}”已存在")
+        #         program_id = db.insert_program(name=name, description=description)
+        #         print(gr_file.name + name + description) # type: ignore
+        # except Exception as e:
+        #     logger.error(f"数据库操作失败，错误信息：{str(e)}") 
+        #     raise gr.Error("数据库操作失败")
+
+        # exe_path = gr_file.name  # type: ignore
+        
+        # dest_dir = os.path.join("data", "cmd", str(program_id))
+        # os.makedirs(dest_dir, exist_ok=True)
+        # dest_exe_path = os.path.join(dest_dir, os.path.basename(exe_path))
+        # try:
+        #     shutil.copy2(exe_path, dest_exe_path)
+        # except Exception as e:
+        #     logger.error(f"文件复制失败: {str(e)}")
+        #     raise gr.Error(f"文件复制失败")
+        
+        gr.Success("程序新建成功", duration=3)
+    
+    gr.Markdown("## 新建客户端")
+
+    file_input = gr.File(label="拖动或点击上传frpc客户端")
+    name = gr.Textbox(label="程序名称")
+    description = gr.Textbox(label="程序描述、备注")
+    
+    btn = gr.Button("新建")
+    btn.click(fn=submit, inputs=[file_input, name, description])

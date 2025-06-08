@@ -21,6 +21,7 @@ from gradio_mcp.visitors import (
 )
 from gradio_mcp.programs import (
     list_programs,
+    new_program,
     program_controller,
     delete_program
 )
@@ -189,6 +190,8 @@ with gr.Blocks() as demo:
             page_programs()
         with gr.TabItem("客户端配置文件配置", id="page5"):
             page_client_configs()
+        with gr.TabItem("新建客户端", id="page6"):
+            new_program()
 
 # TODO: 清除上传缓存
 
