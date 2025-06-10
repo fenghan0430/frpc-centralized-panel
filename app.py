@@ -282,8 +282,12 @@ with gr.Blocks(title="frpc centralized panel") as demo:
           new_proxy_tab.select(fn=get_dp_choices_for_program_name, outputs=dp_program_id_new, show_api=False)
           
           def new_proxy_from_code(pname, toml_str):
-            cfg = toml.loads(toml_str)
-            cfg = json.dumps(cfg, ensure_ascii=False)
+            try:
+              data = json.dumps(toml.loads(toml_str), ensure_ascii=False)
+            except Exception as e:
+              logger.error("TOML format conversion failed, error message:%s" % str(e))
+              raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
+
             program_list = list_programs()
             if not program_list["status"] == "成功":
               logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
@@ -293,7 +297,7 @@ with gr.Blocks(title="frpc centralized panel") as demo:
             for i in program_list['data']:
               program_id_name_map[i['name']] = str(i['id'])
             
-            msg = new_proxy(program_id_name_map[pname], cfg)
+            msg = new_proxy(program_id_name_map[pname], data)
             if msg['status'] == '成功':
               gr.Success(msg['message'])
             else:
@@ -368,7 +372,11 @@ with gr.Blocks(title="frpc centralized panel") as demo:
             for i in program_list['data']:
               program_id_name_map[i['name']] = str(i['id'])
             
-            data = json.dumps(toml.loads(config), ensure_ascii=False)
+            try:
+              data = json.dumps(toml.loads(config), ensure_ascii=False)
+            except Exception as e:
+              logger.error("TOML format conversion failed, error message:%s" % str(e))
+              raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
 
             msg = update_proxy_by_name(program_id_name_map[pname], data)
             if not msg['status'] == "成功":
@@ -471,7 +479,11 @@ with gr.Blocks(title="frpc centralized panel") as demo:
             )
           
           def new_visitor_from_code(pname, toml_str):
-            cfg = toml.loads(toml_str)
+            try:
+              cfg = toml.loads(toml_str) # TODO：给所有的toml格式转换加try
+            except Exception as e:
+              logger.error("TOML format conversion failed, error message:%s" % str(e))
+              raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
             cfg = json.dumps(cfg, ensure_ascii=False)
             
             program_name_id_map = get_program_name_ip_map()
@@ -558,7 +570,11 @@ with gr.Blocks(title="frpc centralized panel") as demo:
             for i in program_list['data']:
               program_id_name_map[i['name']] = str(i['id'])
             
-            data = json.dumps(toml.loads(config), ensure_ascii=False)
+            try:
+              data = json.dumps(toml.loads(config), ensure_ascii=False) # TODO：给所有的toml格式转换加try
+            except Exception as e:
+              logger.error("TOML format conversion failed, error message:%s" % str(e))
+              raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
 
             msg = update_visitor_by_name(program_id_name_map[pname], data)
             if not msg['status'] == "成功":
@@ -801,7 +817,11 @@ with gr.Blocks(title="frpc centralized panel") as demo:
               for i in program_list['data']:
                 program_id_name_map[i['name']] = str(i['id'])
               
-              data = json.dumps(toml.loads(config), ensure_ascii=False)
+              try:
+                data = json.dumps(toml.loads(config), ensure_ascii=False) # TODO：给所有的toml格式转换加try
+              except Exception as e:
+                logger.error("TOML format conversion failed, error message:%s" % str(e))
+                raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
 
               msg = update_client_config(program_id_name_map[pname], data)
               if not msg['status'] == "成功":
