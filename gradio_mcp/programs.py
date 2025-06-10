@@ -6,6 +6,7 @@ from utils.ConfigManager import ConfigManager
 from utils.database import DataBase
 from utils.program_manager import ProgramManager
 import gradio as gr
+import requests
 
 # 临时配置文件地址
 database_path = "data/data.db"
@@ -282,7 +283,7 @@ async def reload_program(program_id: str,) -> dict:
             "message": f"使用frpc reload失败，错误码{response.status_code}, 内容：{response.text[:200].strip()}。"
         }
     
-    return {"status": "重载成功", "message": "重载成功"}    
+    return {"status": "成功", "message": "重载成功"}    
 
 async def program_controller(program_id: str, action: str,):
     """根据指定操作控制FRPC客户端程序
@@ -382,20 +383,20 @@ def new_program():
         program_id = None
         try:
             if not gr_file or not name or len(name) == 0:
-                raise gr.Error("请正确上传文件和设置程序名称")
+                raise gr.Error("Please upload the file correctly and set the program name.")
             
             try:
                 with DataBase(database_path) as db:
                     # 验证 name 是否重复
                     exist = db.query_program(name=name)
                     if exist:
-                        raise gr.Error(f"程序名称“{name}”已存在")
+                        raise gr.Error(f"name: {name} exists. Please choose another name.")
                     program_id = db.insert_program(name=name, description=description)
             except gr.Error as e:
                 raise e
             except Exception as e:
-                logger.error(f"数据库操作失败，错误信息：{str(e)}") 
-                raise gr.Error("数据库操作失败")
+                logger.error(f"Database operation failed, error message:{str(e)}") 
+                raise gr.Error("Database operation failed")
             exe_path = gr_file.name  # type: ignore
             
             dest_dir = os.path.join("data", "cmd", str(program_id))
@@ -406,10 +407,10 @@ def new_program():
                 shutil.copy2(exe_path, dest_exe_path)
                 os.chmod(dest_exe_path, 0o755)
             except Exception as e:
-                logger.error(f"文件复制失败: {str(e)}")
-                raise gr.Error(f"文件复制失败")
+                logger.error(f"File copy failed:{str(e)}")
+                raise gr.Error(f"File copy failed")
             
-            gr.Success("程序新建成功", duration=3)
+            gr.Success("Program created successfully", duration=3)
         except gr.Error as e:
             logger.info("程序新建失败, 开始回退")
             if program_id is not None:
@@ -425,20 +426,29 @@ def new_program():
                     logger.warning(f"回退时删除客户端{program_id}目录错误")
             raise e # type: ignore
 
-    gr.Markdown("## 新建客户端")
+    gr.Markdown("## New Client")
 
-    file_input = gr.File(label="拖动或点击上传frpc客户端")
-    name = gr.Textbox(label="程序名称")
-    description = gr.Textbox(label="程序描述、备注")
+    file_input = gr.File(label="Drag or click to upload frpc client")
+    name = gr.Textbox(label="Client Name")
+    description = gr.Textbox(label="Client description")
     
-    btn = gr.Button("新建")
+    btn = gr.Button("Create")
     btn.click(fn=submit, inputs=[file_input, name, description], show_api=False)
 
-async def watch_log(program_name: str, map: dict):
+async def watch_log(program_name: str):
     """查看程序日志"""
-    logger.info("一个新的协程")
     from ansi2html import Ansi2HTMLConverter
-    program_id = map[program_name]
+    program_list = list_programs()
+    if not program_list["status"] == "成功":
+        logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+        raise gr.Error("Error in obtaining the program list data")
+    program_list = program_list['data'] # list
+    
+    program_name_id_map = {}
+    for i in range(len(program_list)):
+        program_name_id_map[program_list[i]['name']] = str(program_list[i]['id'])
+    
+    program_id = program_name_id_map[program_name]
     
     programs = list_programs()
     
@@ -446,7 +456,7 @@ async def watch_log(program_name: str, map: dict):
         programs = programs['data']
     else:
         logger.error(f"获取程序列表失败: {programs['msg']}")
-        yield "获取程序列表失败"
+        yield "Error in obtaining the program list data"
         return
     is_running = False
     
@@ -454,13 +464,13 @@ async def watch_log(program_name: str, map: dict):
         if program_id == str(program['id']) and program['status'] == "运行":
             is_running = True
     if not is_running:
-        yield f"客户端未运行"
+        yield f"Client not start"
         return
     
     log_file = f"data/cmd/{program_id}/log.log"
     
     if not log_file:
-        yield "没有从选择框获取到值"
+        yield "No Data"
         return
     
     # 等待日志文件生成

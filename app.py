@@ -43,9 +43,10 @@ from utils.program_manager import ProgramManager
 data_path = "data/"
 select_tab_id = None
 tasks = []
+program_manager = ProgramManager()
 
 def page_client_configs_mcp():
-    gr.Markdown("# 客户端配置文件配置")
+    gr.Markdown("# setting client configs")
     gr.Markdown("## get_client_config_by_id")
     gr.Interface(
         fn=get_client_config_by_id,
@@ -118,7 +119,7 @@ def page_proxies_mcp():
     )
 
 def page_visitors_mcp():
-    gr.Markdown("# 观察者(visitors)接口列表")
+    gr.Markdown("# visitors mcp tools")
 
     gr.Markdown("## get_all_visitors")
     gr.Interface(
@@ -163,7 +164,7 @@ def page_visitors_mcp():
     )
 
 def page_programs_mcp():
-    gr.Markdown("# 客户端配置")
+    gr.Markdown("# client program")
     gr.Markdown("## list_programs")
     gr.Interface(
         fn = list_programs,
@@ -193,8 +194,8 @@ def init():
 def get_dp_choices_for_program_name():
   program_list = list_programs()
   if not program_list["status"] == "成功":
-    logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-    raise gr.Error("获取程序列表数据错误")
+    logger.error(f"Error in obtaining the program list data, Error message: {program_list['message']}")
+    raise gr.Error("Error in obtaining the program list data")
   
   program_id_name_map = {}
   for i in program_list['data']:
@@ -207,8 +208,8 @@ def get_dp_choices_for_program_name():
 def get_program_name_ip_map():
   program_list = list_programs()
   if not program_list["status"] == "成功":
-    logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-    raise gr.Error("获取程序列表数据错误")
+    logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+    raise gr.Error("Error in obtaining the program list data")
   program_list = program_list['data'] # list
   
   program_id_name_map = {}
@@ -216,8 +217,8 @@ def get_program_name_ip_map():
     program_id_name_map[program_list[i]['name']] = str(program_list[i]['id'])
   return program_id_name_map
 
-with gr.Blocks(title="frpc 管理面板") as demo:
-  gr.Markdown("# 🎉 MCP Server")
+with gr.Blocks(title="frpc centralized panel") as demo:
+  gr.Markdown("# frpc centralized panel with MCP")
 
   with gr.Tabs():
     
@@ -226,19 +227,19 @@ with gr.Blocks(title="frpc 管理面板") as demo:
       gr.Markdown("## README")
     
     
-    with gr.Tab("隧道(proxies)管理") as proxies_tab:
-      gr.Markdown("## 隧道(proxies)管理界面")
+    with gr.Tab("Proxies Management") as proxies_tab:
+      gr.Markdown("## Proxies Management")
       data_table = gr.Dataframe()
       def get_proxies_table():
         data = get_all_proxies()
         if not data["status"] == "成功":
-          logger.error(f"获取隧道数据错误，错误：{data['message']}")
-          raise gr.Error("获取隧道数据错误")
+          logger.error(f"Error in obtaining the program list data, Error:{data['message']}")
+          raise gr.Error("Error in obtaining the program list data")
         
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-          raise gr.Error("获取程序列表数据错误")
+          logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+          raise gr.Error("Error in obtaining the program list data")
         program_list = program_list['data'] # list
         
         program_id_name_map = {}
@@ -256,7 +257,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
         data = data['data'] # list
         data_pd = pd.DataFrame(columns = ["program name", "name", "type", "status", 'route'])
         if len(data) <= 0:
-          data_pd.loc[0] = ["目前没有隧道", "目前没有隧道", "目前没有隧道", "目前没有隧道", "目前没有隧道"]
+          data_pd.loc[0] = ["No Data", "No Data", "No Data", "No Data", "No Data"]
 
         for data_item in data:
           if data_item['type'] == "http":
@@ -274,7 +275,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
       
       proxies_tab.select(fn=get_proxies_table, outputs=data_table, show_api=False)
       
-      with gr.Tab("新建隧道") as new_proxy_tab:
+      with gr.Tab("new tunnel") as new_proxy_tab:
         with gr.Row():
           dp_program_id_new = gr.Dropdown(interactive=True)
 
@@ -285,8 +286,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             cfg = json.dumps(cfg, ensure_ascii=False)
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+              raise gr.Error("Error in obtaining the program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -297,11 +298,11 @@ with gr.Blocks(title="frpc 管理面板") as demo:
               gr.Success(msg['message'])
             else:
               raise gr.Error(msg['message'])
-          btn_new = gr.Button("新建隧道")
+          btn_new = gr.Button("new tunnel")
         
-        code = gr.Code(label="隧道参数(格式toml)", interactive=True)
+        code = gr.Code(label="Tunnel Parameters (TOML Format)", interactive=True)
         btn_new.click(fn=new_proxy_from_code, inputs=[dp_program_id_new, code], show_api=False)
-      with gr.Tab("修改/删除隧道") as change_proxy_tab:
+      with gr.Tab("Edit/Delete Tunnel") as change_proxy_tab:
         with gr.Row():
           dp_program_id_change = gr.Dropdown(interactive=True)
           change_proxy_tab.select(
@@ -315,8 +316,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           def get_dp_choices_for_proxies(pname):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+              raise gr.Error("Error in obtaining the program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -324,8 +325,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             
             msg = get_proxy_by_program_id(program_id_name_map[pname])
             if not msg['status'] == '成功':
-              logger.error(f"获取代理数据错误，错误：{msg['message']}")
-              raise gr.Error("获取代理数据错误")
+              logger.error(f"Error fetching proxy data:{msg['message']}")
+              raise gr.Error("Error fetching proxy data")
             names = []
             
             for i in msg['data']:
@@ -341,8 +342,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           def get_proxy_config_for_code(pname, name):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+              raise gr.Error("Error in obtaining the program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -350,8 +351,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             
             msg = get_proxy_by_name(program_id_name_map[pname], name)
             if not msg['status'] == '成功':
-              logger.error(f"获取隧道配置数据错误，错误：{msg['message']}")
-              raise gr.Error("获取隧道配置数据")
+              logger.error(f"Error in obtaining the program list data, Error:{msg['message']}")
+              raise gr.Error("Error in obtaining the program list data")
 
             data = toml.dumps(msg['data'])
             
@@ -360,8 +361,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           def update_proxy_from_code(pname, config):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error fetching program list data: {program_list['message']}")
+              raise gr.Error("Error fetching program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -371,15 +372,15 @@ with gr.Blocks(title="frpc 管理面板") as demo:
 
             msg = update_proxy_by_name(program_id_name_map[pname], data)
             if not msg['status'] == "成功":
-              logger.error(f"更新隧道配置数据错误，错误：{msg['message']}")
-              raise gr.Error(f"更新隧道配置数据，错误：{msg['message']}")
+              logger.error(f"Error updating tunnel configuration data: {msg['message']}")
+              raise gr.Error(f"Error updating tunnel configuration data: {msg['message']}")
             gr.Success(msg['message'])
           
           def del_proxy(pname, name):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+              raise gr.Error("Error in obtaining the program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -387,13 +388,13 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             
             msg = delete_proxy_by_name(program_id_name_map[pname], name)
             if not msg['status'] == "成功":
-              logger.error(f"删除隧道出现错误，错误：{msg['message']}")
-              raise gr.Error(f"删除隧道出现错误，错误：{msg['message']}")
+              logger.error(f"Error deleting tunnel:{msg['message']}")
+              raise gr.Error(f"Error deleting tunnel:{msg['message']}")
             gr.Success(msg['message'])
           
-          btn_get_proxy_config = gr.Button("获取隧道配置")
-          btn_update_proxy = gr.Button("更新隧道配置", variant='huggingface')
-          btn_del_proxy = gr.Button('删除隧道', variant='stop')
+          btn_get_proxy_config = gr.Button("Get Tunnel Configuration")
+          btn_update_proxy = gr.Button("Update Tunnel Configuration", variant='huggingface')
+          btn_del_proxy = gr.Button('Delete Tunnel', variant='stop')
         
         code_proxy_change = gr.Code(interactive=True)
         
@@ -421,19 +422,19 @@ with gr.Blocks(title="frpc 管理面板") as demo:
         )
       
       
-    with gr.Tab("观察者(visitors)管理") as visitors_tab:
-      gr.Markdown("## 观察者(visitors)管理界面")
+    with gr.Tab("Visitors Management") as visitors_tab:
+      gr.Markdown("## Visitors Management")
       visitors_data_table = gr.Dataframe()
       def get_visitors_table():
         data = get_all_visitors()
         if not data["status"] == "成功":
-          logger.error(f"获取观察者数据错误，错误：{data['message']}")
-          raise gr.Error("获取观察者数据错误")
+          logger.error(f"Error fetching visitor data:{data['message']}")
+          raise gr.Error("Error fetching visitor data")
         
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-          raise gr.Error("获取程序列表数据错误")
+          logger.error(f"Error fetching program list data:{program_list['message']}")
+          raise gr.Error("Error fetching program list data")
         program_list = program_list['data'] # list
         
         program_id_name_map = {}
@@ -451,7 +452,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
         data = data['data'] # list
         data_pd = pd.DataFrame(columns = ["program name", "name", "type", 'route'])
         if len(data) <= 0:
-          data_pd.loc[0] = ["目前没有观察者", "目前没有观察者", "目前没有观察者", "目前没有观察者"]
+          data_pd.loc[0] = ["No Data", "No Data", "No Data", "No Data"]
         for data_item in data:
           route = f"{data_item['serverName']} -> {data_item['bindAddr']}:{data_item['bindPort']}"
           data_pd.loc[len(data_pd)] = [program_id_name_map[str(data_item['program_id'])], data_item['name'], data_item['type'], route]
@@ -460,7 +461,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
       
       visitors_tab.select(fn=get_visitors_table, outputs=visitors_data_table, show_api=False)
 
-      with gr.Tab("新建观察者") as new_visitor_tab:
+      with gr.Tab("New Visitor") as new_visitor_tab:
         with gr.Row():
           dp_program_id_new_visitor = gr.Dropdown(interactive=True)
           new_visitor_tab.select(
@@ -481,9 +482,9 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             else:
               raise gr.Error(msg['message'])
           
-          btn_new_visitor = gr.Button("新建隧道")
+          btn_new_visitor = gr.Button("Create Visitor")
         
-        code_visitor = gr.Code(label="观察者参数(格式toml)", interactive=True)
+        code_visitor = gr.Code(label="Visitor Parameters (TOML Format)", interactive=True)
       
         btn_new_visitor.click(
           fn=new_visitor_from_code, 
@@ -491,7 +492,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           show_api=False
           )
       
-      with gr.Tab("修改/删除观察者") as change_visitor_tab:
+      with gr.Tab("Edit/Delete Visitor") as change_visitor_tab:
         with gr.Row():
           dp_program_id_change_visitor = gr.Dropdown(interactive=True)
           change_visitor_tab.select(
@@ -505,8 +506,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           def get_dp_choices_for_visitors(pname):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+              raise gr.Error("Error in obtaining the program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -514,8 +515,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             
             msg = get_visitors_by_program_id(program_id_name_map[pname])
             if not msg['status'] == '成功':
-              logger.error(f"获取观察者数据错误，错误：{msg['message']}")
-              raise gr.Error("获取观察者数据错误")
+              logger.error(f"Error fetching visitor data: {msg['message']}")
+              raise gr.Error("Error fetching visitor data")
             names = []
             
             for i in msg['data']:
@@ -531,8 +532,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           def get_visitor_config_for_code(pname, name):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
+              raise gr.Error("Error in obtaining the program list data, Error:")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -540,8 +541,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             
             msg = get_visitor_by_name(program_id_name_map[pname], name)
             if not msg['status'] == '成功':
-              logger.error(f"获取观察者数据错误，错误：{msg['message']}")
-              raise gr.Error("获取观察者数据错误")
+              logger.error(f"Error fetching visitor data: {msg['message']}")
+              raise gr.Error("Error fetching visitor data")
 
             data = toml.dumps(msg['data'])
             
@@ -550,8 +551,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           def update_visitor_from_code(pname, config):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error fetching program list data: {program_list['message']}")
+              raise gr.Error("Error fetching program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -561,15 +562,15 @@ with gr.Blocks(title="frpc 管理面板") as demo:
 
             msg = update_visitor_by_name(program_id_name_map[pname], data)
             if not msg['status'] == "成功":
-              logger.error(f"更新观察者错误，错误：{msg['message']}")
-              raise gr.Error(f"更新观察者错误，错误：{msg['message']}")
+              logger.error(f"Error updating visitor: {msg['message']}")
+              raise gr.Error(f"Error updating visitor: {msg['message']}")
             gr.Success(msg['message'])
           
           def del_visitor(pname, name):
             program_list = list_programs()
             if not program_list["status"] == "成功":
-              logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-              raise gr.Error("获取程序列表数据错误")
+              logger.error(f"Error fetching program list data:{program_list['message']}")
+              raise gr.Error("Error fetching program list data")
             
             program_id_name_map = {}
             for i in program_list['data']:
@@ -577,13 +578,13 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             
             msg = delete_visitor_by_name(program_id_name_map[pname], name)
             if not msg['status'] == "成功":
-              logger.error(f"删除观察者出现错误，错误：{msg['message']}")
-              raise gr.Error(f"删除观察者出现错误，错误：{msg['message']}")
+              logger.error(f"Error deleting visitor: {msg['message']}")
+              raise gr.Error(f"Error deleting visitor: {msg['message']}")
             gr.Success(msg['message'])
           
-          btn_get_visitor_config = gr.Button("获取观察者配置")
-          btn_update_visitor = gr.Button("更新观察者配置", variant='huggingface')
-          btn_del_visitor = gr.Button('删除观察者', variant='stop')
+          btn_get_visitor_config = gr.Button("Get Visitor Configuration")
+          btn_update_visitor = gr.Button("Update Visitor Configuration", variant='huggingface')
+          btn_del_visitor = gr.Button('Delete Visitor', variant='stop')
 
         code_visitor_change = gr.Code(interactive=True)
         
@@ -610,8 +611,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
         )
     
     
-    with gr.Tab("客户端配置文件管理") as client_cfg_tab:
-      gr.Markdown("## 客户端配置文件管理界面")
+    with gr.Tab("Client Management") as client_cfg_tab:
+      gr.Markdown("## Client Management")
       client_cfg_table = gr.Dataframe()
 
       def get_client_cfg_table():
@@ -619,22 +620,22 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           try:
             data = db.query_program()
           except Exception as e:
-            logger.error(f"查询数据库错误，错误：{e}")
-            raise gr.Error("查询数据库错误")
+            logger.error(f"Error querying database:{e}")
+            raise gr.Error("Error querying database")
         
         data_pd = pd.DataFrame(columns = ["program id", "program name", "description", "status",  'connect address', 'webserver'])
         if len(data) <= 0:
-          data_pd.loc[0] = ["目前没有客户端", "目前没有客户端", "目前没有客户端", "目前没有客户端", "目前没有客户端", "目前没有客户端"]
-        pm = ProgramManager()
+          data_pd.loc[0] = ["No Data", "No Data", "No Data", "No Data", "No Data", "No Data"]
+        
         for data_item in data:
           # status
           id = str(data_item[0])
           
-          frpc_i = pm.get_instance(id)
+          frpc_i = program_manager.get_instance(id)
           if not frpc_i:
-            status = "未运行"
+            status = "never run"
           else:
-            status = "运行" if frpc_i.is_running() else "未运行"
+            status = "running" if frpc_i.is_running() else "stop"
           
           # ca
           msg = get_client_config_by_id(id)
@@ -642,7 +643,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           port = None
           http_type = "http://"
           if not msg['status'] == "成功":
-            logger.warning(f"客户端ID {id} 配置文件读取失败: {msg['message']}")
+            logger.warning(f"client ID:{id}failed to read configuration file: {msg['message']}")
           else: 
             cfg = msg['data']
             if "serverAddr" in cfg.keys():
@@ -677,8 +678,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
       # 新建客户端 删除客户端
       # 新建配置文件， 修改删除配置文件
       
-      with gr.Tab("客户端操作"):
-        with gr.Tab("程序启停控制") as control_tab:
+      with gr.Tab("Client Actions"):
+        with gr.Tab("Actions(start, stop)") as control_tab:
           with gr.Row():
             dp_pid_control = gr.Dropdown(interactive=True)
             control_tab.select(
@@ -688,22 +689,22 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             )
             
             with gr.Column():
-              btn_control_start = gr.Button("启动", variant="primary")
-              btn_control_reload = gr.Button("热重载")
+              btn_control_start = gr.Button("Start", variant="primary")
+              btn_control_reload = gr.Button("Reload Config")
             with gr.Column():
-              btn_control_stop = gr.Button("停止", variant="stop")
-              btn_control_restart = gr.Button("重启")
+              btn_control_stop = gr.Button("Stop", variant="stop")
+              btn_control_restart = gr.Button("Restart")
             
             async def control(pname, action):
               program_name_ip_map = get_program_name_ip_map()
               
               msg = await program_controller(program_name_ip_map[pname], action)
               if not msg:
-                logger.error("操作失败，错误：返回为None")
-                raise gr.Error("操作失败")
+                logger.error("Operation failed, error: returned None")
+                raise gr.Error("Operation failed")
               if not msg['status'] == '成功':
-                logger.error("操作失败，错误：%s" % msg['message'])
-                raise gr.Error("操作失败")
+                logger.error("Operation failed：%s" % msg['message'])
+                raise gr.Error("Operation failed")
 
               gr.Success(msg['message'])
             
@@ -730,9 +731,9 @@ with gr.Blocks(title="frpc 管理面板") as demo:
               inputs=[dp_pid_control, gr.State('restart')],
               show_api=False
               )
-        with gr.Tab("新建客户端"): 
+        with gr.Tab("New Client"): 
           new_program()
-        with gr.Tab("删除客户端") as client_del_tab: 
+        with gr.Tab("Delete Client") as client_del_tab: 
           with gr.Row():
             dp_pid_client_del = gr.Dropdown(interactive=True)
             client_del_tab.select(
@@ -746,10 +747,10 @@ with gr.Blocks(title="frpc 管理面板") as demo:
               
               msg = delete_program(program_name_ip_map[pname])
               if not msg['status'] == "成功":
-                raise gr.Error(f"删除客户端失败: {msg['message']}")
+                raise gr.Error(f"Failed to delete client:{msg['message']}")
               gr.Success(msg['message'])
             
-            btn_client_del = gr.Button("删除客户端")
+            btn_client_del = gr.Button("Delete")
             btn_client_del.click(
               show_api=False,
               fn=client_del,
@@ -761,8 +762,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
           outputs=dp_pid_control
         )
       
-      with gr.Tab("客户端配置文件操作") as ccfg_action_tab:
-        with gr.Tab("修改/删除客户端配置文件") as ccfg_change_tab:
+      with gr.Tab("Client Configuration") as ccfg_action_tab:
+        with gr.Tab("Edit/Delete Client Configuration File") as ccfg_change_tab:
           with gr.Row():
             dp_pid_change_ccfg = gr.Dropdown(interactive=True) # ccfg = client config
             ccfg_change_tab.select(
@@ -774,8 +775,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             def get_client_config_for_code(pname):
               program_list = list_programs()
               if not program_list["status"] == "成功":
-                logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-                raise gr.Error("获取程序列表数据错误")
+                logger.error(f"Error fetching program list data:{program_list['message']}")
+                raise gr.Error("Error fetching program list data")
               
               program_id_name_map = {}
               for i in program_list['data']:
@@ -783,8 +784,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
               
               msg = get_client_config_by_id(program_id_name_map[pname])
               if not msg['status'] == '成功':
-                logger.error(f"获取客户端配置文件错误，错误：{msg['message']}")
-                raise gr.Error("获取客户端配置文件错误")
+                logger.error(f"Error fetching client configuration file: {msg['message']}")
+                raise gr.Error("Error fetching client configuration file")
 
               data = toml.dumps(msg['data'])
               
@@ -793,8 +794,8 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             def update_client_config_from_code(pname, config):
               program_list = list_programs()
               if not program_list["status"] == "成功":
-                logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-                raise gr.Error("获取程序列表数据错误")
+                logger.error(f"Error fetching program list data:{program_list['message']}")
+                raise gr.Error("Error fetching program list data")
               
               program_id_name_map = {}
               for i in program_list['data']:
@@ -804,15 +805,15 @@ with gr.Blocks(title="frpc 管理面板") as demo:
 
               msg = update_client_config(program_id_name_map[pname], data)
               if not msg['status'] == "成功":
-                logger.error(f"更新客户端配置文件错误，错误：{msg['message']}")
-                raise gr.Error(f"更新客户端配置文件错误，错误：{msg['message']}")
+                logger.error(f"Error updating client configuration file:{msg['message']}")
+                raise gr.Error(f"Error updating client configuration file:{msg['message']}")
               gr.Success(msg['message'])
             
             def del_client_config(pname):
               program_list = list_programs()
               if not program_list["status"] == "成功":
-                logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
-                raise gr.Error("获取程序列表数据错误")
+                logger.error(f"Error fetching program list data: {program_list['message']}")
+                raise gr.Error("Error fetching program list data: ")
               
               program_id_name_map = {}
               for i in program_list['data']:
@@ -820,13 +821,13 @@ with gr.Blocks(title="frpc 管理面板") as demo:
               
               msg = delete_client_config(program_id_name_map[pname])
               if not msg['status'] == "成功":
-                logger.error(f"删除客户端配置文件出现错误，错误：{msg['message']}")
-                raise gr.Error(f"删除客户端配置文件出现错误，错误：{msg['message']}")
+                logger.error(f"Error deleting client configuration file: {msg['message']}")
+                raise gr.Error(f"Error deleting client configuration file: {msg['message']}")
               gr.Success(msg['message'])
             
-            btn_get_ccfg = gr.Button("获取客户端配置文件")
-            btn_update_ccfg = gr.Button("更新客户端配置文件", variant='huggingface')
-            btn_del_ccfg = gr.Button('删除客户端配置文件', variant='stop')
+            btn_get_ccfg = gr.Button("Get Client Configuration")
+            btn_update_ccfg = gr.Button("Update Client Configuration", variant='huggingface')
+            btn_del_ccfg = gr.Button('Delete Client Configuration', variant='stop')
           
           code_ccfg_change = gr.Code(interactive=True)
           
@@ -847,7 +848,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             show_api=False
             )
           
-        with gr.Tab("新建客户端配置文件") as ccfg_new_tab:
+        with gr.Tab("New Client Configuration") as ccfg_new_tab:
           with gr.Row():
             dp_pid_new_cfg = gr.Dropdown(interactive=True)
             ccfg_new_tab.select(
@@ -855,7 +856,7 @@ with gr.Blocks(title="frpc 管理面板") as demo:
               fn=get_dp_choices_for_program_name,
               outputs=dp_pid_new_cfg
             )
-            btn_new_ccfg = gr.Button('新建客户端配置文件')
+            btn_new_ccfg = gr.Button('Create Client Configuration')
           
           code_ccfg_new = gr.Code(interactive=True)
           
@@ -865,13 +866,13 @@ with gr.Blocks(title="frpc 管理面板") as demo:
             try:
               data = json.dumps(toml.loads(config), ensure_ascii=False) # TODO：给所有的toml格式转换加try
             except Exception as e:
-              logger.error("TOML格式转换失败，错误信息：%s" % str(e))
-              raise gr.Error("TOML格式转换失败，错误信息：%s" % str(e))
+              logger.error("TOML format conversion failed, error message:%s" % str(e))
+              raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
             
             msg = new_client_config(program_name_ip_map[pname], data)
             if not msg['status'] == "成功":
-              logger.error("新建配置文件出错, 错误%s" % msg['message'])
-              raise gr.Error("新建配置文件出错")
+              logger.error("Failed to create configuration file, error:%s" % msg['message'])
+              raise gr.Error("Failed to create configuration file")
 
             gr.Success(msg['message'])
           
@@ -888,54 +889,64 @@ with gr.Blocks(title="frpc 管理面板") as demo:
         )
     
     
-    with gr.TabItem("日志") as log_tab:
-      gr.Markdown("## 查看程序日志")
-      
-      program_dict = {} # key: name, v: id
-      with DataBase(os.path.join(data_path, "data.db")) as db:
-        try:
-          r = db.query_program()
-          for i in r:
-            program_dict[i[1]] = str(i[0])
-        except Exception as e:
-          logger.error(f"数据库操作错误，错误：{e}")
-          raise gr.Error("数据库操作错误")
+    with gr.TabItem("Log") as log_tab:
+      gr.Markdown("## program log")
       
       dropdown = gr.Dropdown(
-        choices=list(program_dict.keys()),
-        label="选择要查看日志的客户端",
+        choices=[],
+        label="Select Client to View Logs",
         )
-      btn = gr.Button("查看")
+      
+      def log_pid():
+        program_dict = {} # key: name, v: id
+        with DataBase(os.path.join(data_path, "data.db")) as db:
+          try:
+            r = db.query_program()
+            for i in r:
+              program_dict[i[1]] = str(i[0])
+          except Exception as e:
+            logger.error(f"Database operation error:{e}")
+            raise gr.Error("Database operation error")
+          return gr.Dropdown(
+            choices=list(program_dict.keys()), 
+            value = list(program_dict.keys())[0] if len(program_dict.keys()) > 0 else None,
+            )
+      
+      log_tab.select(
+        show_api=False,
+        fn=log_pid,
+        outputs=dropdown
+      )
+      
+      btn = gr.Button("Watch Log")
       # log_text_box = gr.Textbox(label="实时日志输出", interactive=False, max_lines=100)
       gr.Markdown("")
       log_html_box = gr.HTML(
-        label="日志输出", 
+        label="Log", 
         max_height=400,
         )
 
       btn.click(
         fn=watch_log, 
-        inputs=[dropdown, gr.State(program_dict)], 
+        inputs=[dropdown], 
         outputs=log_html_box,
         show_api=False
         )
     
-    
     with gr.TabItem("MCP API", id=1) as mcp_tab:
       with gr.Tabs():
-        with gr.TabItem("隧道(proxies)配置", id="page2"):
+        with gr.TabItem("proxies", id="page2"):
           page_proxies_mcp()
-        with gr.TabItem("观察者(visitors)配置", id="page3"):
+        with gr.TabItem("visitors", id="page3"):
           page_visitors_mcp()
-        with gr.TabItem("客户端配置", id="page4"):
+        with gr.TabItem("programs", id="page4"):
           page_programs_mcp()
-        with gr.TabItem("客户端配置文件配置", id="page5"):
+        with gr.TabItem("client configs", id="page5"):
           page_client_configs_mcp()
 
 
 def _cleanup_before_exit(type_: str = ""):
   logger.info(f"收到退出信号{type_}，开始清理工作…")
-  program_manager: ProgramManager = ProgramManager()
   program_manager.stop_all()
 
 # 在程序正常退出时也执行一次清理
