@@ -114,7 +114,16 @@ def new_client_config(program_id: str, data: str) -> dict:
     
     请求示例(不是全部参数):  
     - program_id = "0"
-    - data = {"serverAddr": "127.0.0.1", "serverPort": 7000}  
+    - data = {
+        "serverAddr": "127.0.0.1", 
+        "serverPort": 7000,
+        "webServer": {               # webServer不是必要配置，如果用户没说，就不要配置webServer
+                "addr": "127.0.0.1",
+                "port": 7400,
+                "user": "admin",
+                "password": "admin"
+            }
+        }  
     
     返回格式:
     ```json

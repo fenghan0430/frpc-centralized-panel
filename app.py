@@ -224,7 +224,9 @@ with gr.Blocks(title="frpc centralized panel") as demo:
     
     
     with gr.TabItem("README") as readme_tab:
-      gr.Markdown("## README")
+      with open("./README.md", "r", encoding='utf-8') as f:
+        
+        gr.Markdown(f.read())
     
     
     with gr.Tab("Proxies Management") as proxies_tab:
@@ -480,7 +482,7 @@ with gr.Blocks(title="frpc centralized panel") as demo:
           
           def new_visitor_from_code(pname, toml_str):
             try:
-              cfg = toml.loads(toml_str) # TODO：给所有的toml格式转换加try
+              cfg = toml.loads(toml_str)
             except Exception as e:
               logger.error("TOML format conversion failed, error message:%s" % str(e))
               raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
@@ -571,7 +573,7 @@ with gr.Blocks(title="frpc centralized panel") as demo:
               program_id_name_map[i['name']] = str(i['id'])
             
             try:
-              data = json.dumps(toml.loads(config), ensure_ascii=False) # TODO：给所有的toml格式转换加try
+              data = json.dumps(toml.loads(config), ensure_ascii=False)
             except Exception as e:
               logger.error("TOML format conversion failed, error message:%s" % str(e))
               raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
@@ -818,7 +820,7 @@ with gr.Blocks(title="frpc centralized panel") as demo:
                 program_id_name_map[i['name']] = str(i['id'])
               
               try:
-                data = json.dumps(toml.loads(config), ensure_ascii=False) # TODO：给所有的toml格式转换加try
+                data = json.dumps(toml.loads(config), ensure_ascii=False)
               except Exception as e:
                 logger.error("TOML format conversion failed, error message:%s" % str(e))
                 raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
@@ -884,7 +886,7 @@ with gr.Blocks(title="frpc centralized panel") as demo:
             program_name_ip_map = get_program_name_ip_map()
             
             try:
-              data = json.dumps(toml.loads(config), ensure_ascii=False) # TODO：给所有的toml格式转换加try
+              data = json.dumps(toml.loads(config), ensure_ascii=False)
             except Exception as e:
               logger.error("TOML format conversion failed, error message:%s" % str(e))
               raise gr.Error("TOML format conversion failed, error message:%s" % str(e))

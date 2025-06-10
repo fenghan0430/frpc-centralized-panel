@@ -229,7 +229,10 @@ def get_all_proxies():
         for proxy in client_config.proxies:
             proxy_dict = proxy.model_dump(by_alias=True, exclude_none=True)
             proxy_dict["program_id"] = int(folder_name)
-            proxy_dict["status"] = proxy_status[folder_name][proxy.name]
+            if len(proxy_status) > 0:
+                proxy_dict["status"] = proxy_status[folder_name][proxy.name]
+            else:
+                proxy_dict["status"] = "未知"
             # 添加到all_proxies
             all_proxies.append(proxy_dict)
     
