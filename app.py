@@ -38,7 +38,7 @@ from gradio_mcp.client_configs import (
 )
 from utils.database import DataBase
 from utils.program_manager import ProgramManager
-    
+
 # 临时配置文件地址
 data_path = "data/"
 select_tab_id = None
