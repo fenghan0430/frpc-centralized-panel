@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import shutil
@@ -14,7 +15,6 @@ logger = logging.getLogger("gradio_mcp.programs")
 ACTION_LIST = ["start", "stop", "restart", "reload"]
 
 manager = ProgramManager()
-print(f"ProgramManager programs.py 单例测试: {manager}")
 
 def list_programs() -> dict:
     """返回frpc客户端列表
@@ -381,6 +381,9 @@ def new_program():
     def submit(gr_file: gr.File, name: str, description: str):
         program_id = None
         try:
+            if not gr_file or not name or len(name) == 0:
+                raise gr.Error("请正确上传文件和设置程序名称")
+            
             try:
                 with DataBase(database_path) as db:
                     # 验证 name 是否重复
@@ -388,6 +391,8 @@ def new_program():
                     if exist:
                         raise gr.Error(f"程序名称“{name}”已存在")
                     program_id = db.insert_program(name=name, description=description)
+            except gr.Error as e:
+                raise e
             except Exception as e:
                 logger.error(f"数据库操作失败，错误信息：{str(e)}") 
                 raise gr.Error("数据库操作失败")
@@ -427,4 +432,44 @@ def new_program():
     description = gr.Textbox(label="程序描述、备注")
     
     btn = gr.Button("新建")
-    btn.click(fn=submit, inputs=[file_input, name, description])
+    btn.click(fn=submit, inputs=[file_input, name, description], show_api=False)
+
+async def watch_log(program_name: str, map: dict):
+    """查看程序日志"""
+    logger.info("一个新的协程")
+    from ansi2html import Ansi2HTMLConverter
+    program_id = map[program_name]
+    
+    programs = list_programs()
+    
+    if programs['status'] == "成功":
+        programs = programs['data']
+    else:
+        logger.error(f"获取程序列表失败: {programs['msg']}")
+        yield "获取程序列表失败"
+        return
+    is_running = False
+    
+    for program in programs:
+        if program_id == str(program['id']) and program['status'] == "运行":
+            is_running = True
+    if not is_running:
+        yield f"客户端未运行"
+        return
+    
+    log_file = f"data/cmd/{program_id}/log.log"
+    
+    if not log_file:
+        yield "没有从选择框获取到值"
+        return
+    
+    # 等待日志文件生成
+    while not os.path.exists(log_file):
+        await asyncio.sleep(0.1)
+
+    with open(log_file, "r") as f:
+        conv = Ansi2HTMLConverter(inline=True)
+        f.seek(0)
+        content = f.read()
+        html = conv.convert(content)
+        yield html

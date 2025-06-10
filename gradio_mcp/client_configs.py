@@ -59,8 +59,8 @@ def get_client_config_by_id(program_id: str) -> dict:
         "status": "成功",
         "message": "获取客户端配置成功",
         "data": {
-            serverAddr = "127.0.0.1",
-            serverPort = 25566,
+            "serverAddr" = "127.0.0.1",
+            "serverPort" = 25566,
         }
     }
     ```
@@ -226,6 +226,7 @@ def update_client_config(program_id: str, data: str) -> dict:
     try:
         body = json.loads(data)
         new_cfg = ClientConfig(**body)
+        old_cfg = ConfigManager(cfg_file).load_config()
     except json.JSONDecodeError as e:
         return {"status": "失败", "message": f"JSON 解析失败: {e}"}
     except Exception as e:
@@ -236,6 +237,12 @@ def update_client_config(program_id: str, data: str) -> dict:
         msg = check_admin_ui_port_conflict(new_cfg.webServer.port, program_id)
         if msg:
             return msg
+    
+    if old_cfg.proxies:
+        new_cfg.proxies = old_cfg.proxies
+    
+    if old_cfg.visitors:
+        new_cfg.visitors = old_cfg.visitors
 
     try:
         ConfigManager(cfg_file).save_config(new_cfg)

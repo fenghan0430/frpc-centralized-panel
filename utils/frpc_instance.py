@@ -2,6 +2,8 @@ import subprocess
 import threading
 import asyncio
 import logging
+from collections import deque
+from pathlib import Path
 
 class FrpcInstance:
     def __init__(self, executable: str, config_path: str, id: str):
@@ -19,6 +21,8 @@ class FrpcInstance:
         self.stderr_thread = None
         self.logger = logging.getLogger("utils.frpc_instance")
         self.id = id
+        p = Path(executable)
+        self.logfile = str(p.with_name("log.log"))
 
     def start(self):
         """
@@ -61,12 +65,17 @@ class FrpcInstance:
             pipe (io.TextIOWrapper): 子进程的输出管道（stdout 或 stderr）。
             label (str): 输出类型标签（"STDOUT" 或 "STDERR"）。
         """
+        dq = deque(maxlen=500)
         while True:
-            line = pipe.readline().strip()
+            line = pipe.readline() # 保留颜色编码
             if not line:
                 break
-            self.logger.info(f"FRPC id {self.id} : {line}")
+            dq.append(line)
+            with open(self.logfile, "w", encoding="utf-8") as f:
+                f.writelines(dq)
+            self.logger.info(f"FRPC id {self.id} : {line.strip()}")
         pipe.close()
+    
     async def stop(self):
         """
         优雅地异步终止 FRPC 进程。

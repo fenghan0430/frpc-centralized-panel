@@ -126,7 +126,7 @@ def check_proxy_status(ids: List[str] | None = None) -> dict:
     
     return proxy_status
 
-def get_all_proxy():
+def get_all_proxies():
     """获取所有隧道  
     
     返回的格式为：
