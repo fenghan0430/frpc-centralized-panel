@@ -1,0 +1,7 @@
+pydantic
+gradio[mcp]
+colorlog
+toml
+colorlog
+ansi2html
+httpx[socks]
