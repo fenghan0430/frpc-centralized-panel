@@ -188,6 +188,7 @@ def page_programs_mcp():
 
 def init():
     """准备 app"""
+    logger.info("初始化数据库")
     with DataBase(os.path.join(data_path, "data.db")) as db:
         db.init_db()
 
@@ -980,8 +981,10 @@ signal.signal(signal.SIGTERM, lambda signum, frame: (_cleanup_before_exit("SIGTE
 if __name__ == "__main__":
     # 检测data文件夹存不存在
     if not os.path.exists(data_path):
-        os.makedirs(data_path)
-        init()
+      os.makedirs(data_path)
+      init()
+    elif not os.path.exists(os.path.join(data_path, "data.db")):
+      init()
     
     demo.launch(
         mcp_server=True, 
