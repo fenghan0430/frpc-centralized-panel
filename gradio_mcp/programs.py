@@ -1,3 +1,4 @@
+from utils.locale_m import _
 import asyncio
 import logging
 import os
@@ -383,20 +384,20 @@ def new_program():
         program_id = None
         try:
             if not gr_file or not name or len(name) == 0:
-                raise gr.Error("Please upload the file correctly and set the program name.")
+                raise gr.Error(_("请正确上传客户端和设置客户端名称"))
             
             try:
                 with DataBase(database_path) as db:
                     # 验证 name 是否重复
                     exist = db.query_program(name=name)
                     if exist:
-                        raise gr.Error(f"name: {name} exists. Please choose another name.")
+                        raise gr.Error(_("名称%s已存在，请重新设置名称") % name)
                     program_id = db.insert_program(name=name, description=description)
             except gr.Error as e:
                 raise e
             except Exception as e:
-                logger.error(f"Database operation failed, error message:{str(e)}") 
-                raise gr.Error("Database operation failed")
+                logger.error("查询数据库失败，错误: %s" % str(e)) 
+                raise gr.Error(_("查询数据库失败"))
             exe_path = gr_file.name  # type: ignore
             
             dest_dir = os.path.join("data", "cmd", str(program_id))
@@ -407,10 +408,10 @@ def new_program():
                 shutil.copy2(exe_path, dest_exe_path)
                 os.chmod(dest_exe_path, 0o755)
             except Exception as e:
-                logger.error(f"File copy failed:{str(e)}")
-                raise gr.Error(f"File copy failed")
+                logger.error("文件复制出错，错误: %s" % str(e))
+                raise gr.Error(_("文件复制出错"))
             
-            gr.Success("Program created successfully", duration=3)
+            gr.Success(_("客户端创建成功"), duration=3)
         except gr.Error as e:
             logger.info("程序新建失败, 开始回退")
             if program_id is not None:
@@ -426,13 +427,13 @@ def new_program():
                     logger.warning(f"回退时删除客户端{program_id}目录错误")
             raise e # type: ignore
 
-    gr.Markdown("## New Client")
+    gr.Markdown("## %s" % _("新建客户端"))
 
-    file_input = gr.File(label="Drag or click to upload frpc client")
-    name = gr.Textbox(label="Client Name")
-    description = gr.Textbox(label="Client description")
+    file_input = gr.File(label=_("拖动或点击以上传frpc客户端程序"))
+    name = gr.Textbox(label=_("客户端名称"))
+    description = gr.Textbox(label=_("客户端描述"))
     
-    btn = gr.Button("Create")
+    btn = gr.Button(_("新建客户端"))
     btn.click(fn=submit, inputs=[file_input, name, description], show_api=False)
 
 async def watch_log(program_name: str):

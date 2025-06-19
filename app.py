@@ -1,3 +1,4 @@
+from utils.locale_m import _
 import atexit
 import json
 import os
@@ -46,7 +47,7 @@ tasks = []
 program_manager = ProgramManager()
 
 def page_client_configs_mcp():
-    gr.Markdown("# setting client configs")
+    gr.Markdown(f"# {_('客户端配置文件工具')}")
     gr.Markdown("## get_client_config_by_id")
     gr.Interface(
         fn=get_client_config_by_id,
@@ -119,7 +120,7 @@ def page_proxies_mcp():
     )
 
 def page_visitors_mcp():
-    gr.Markdown("# visitors mcp tools")
+    gr.Markdown(f"# {_('观察者工具')}")
 
     gr.Markdown("## get_all_visitors")
     gr.Interface(
@@ -164,7 +165,7 @@ def page_visitors_mcp():
     )
 
 def page_programs_mcp():
-    gr.Markdown("# client program")
+    gr.Markdown(f"# {_('客户端程序工具')}")
     gr.Markdown("## list_programs")
     gr.Interface(
         fn = list_programs,
@@ -193,18 +194,18 @@ def init():
         db.init_db()
 
 def page_proxies(tab_var):
-  gr.Markdown("## Proxies Management")
+  gr.Markdown(f"## {_('隧道(proxies)管理')}")
   data_table = gr.Dataframe()
   def get_proxies_table():
     data = get_all_proxies()
     if not data["status"] == "成功":
-      logger.error(f"Error in obtaining the program list data, Error:{data['message']}")
-      raise gr.Error("Error in obtaining the program list data")
+      logger.error(f"获取隧道数据错误，错误：{data['message']}")
+      raise gr.Error(_("获取隧道数据错误"))
     
     program_list = list_programs()
     if not program_list["status"] == "成功":
-      logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-      raise gr.Error("Error in obtaining the program list data")
+      logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+      raise gr.Error(_("获取程序列表数据错误"))
     program_list = program_list['data'] # list
     
     program_id_name_map = {}
@@ -220,9 +221,9 @@ def page_proxies(tab_var):
       program_id_remoteIp_map[i] = cfg['serverAddr']
     
     data = data['data'] # list
-    data_pd = pd.DataFrame(columns = ["program name", "name", "type", "status", 'route'])
+    data_pd = pd.DataFrame(columns = [_("客户端 ID"), _("隧道名称"), _("类型"), _("状态"), _('路由')])
     if len(data) <= 0:
-      data_pd.loc[0] = ["No Data", "No Data", "No Data", "No Data", "No Data"]
+      data_pd.loc[0] = [_("无数据"), _("无数据"), _("无数据"), _("无数据"), _("无数据")]
 
     for data_item in data:
       if data_item['type'] == "http":
@@ -240,7 +241,7 @@ def page_proxies(tab_var):
   
   tab_var.select(fn=get_proxies_table, outputs=data_table, show_api=False)
   
-  with gr.Tab("new tunnel") as new_proxy_tab:
+  with gr.Tab(_("新建隧道")) as new_proxy_tab:
     with gr.Row():
       dp_program_id_new = gr.Dropdown(interactive=True)
 
@@ -254,13 +255,13 @@ def page_proxies(tab_var):
         try:
           data = json.dumps(toml.loads(toml_str), ensure_ascii=False)
         except Exception as e:
-          logger.error("TOML format conversion failed, error message:%s" % str(e))
-          raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
+          logger.error("TOML 格式转换失败，错误:%s" % str(e))
+          raise gr.Error(_("TOML 格式转换失败，错误:%s") % str(e))
 
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-          raise gr.Error("Error in obtaining the program list data")
+          logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -271,12 +272,12 @@ def page_proxies(tab_var):
           gr.Success(msg['message'])
         else:
           raise gr.Error(msg['message'])
-      btn_new = gr.Button("new tunnel")
+      btn_new = gr.Button(_("新建"))
     
-    code = gr.Code(label="Tunnel Parameters (TOML Format)", interactive=True)
+    code = gr.Code(label=_("隧道参数 (TOML 格式)"), interactive=True)
     btn_new.click(fn=new_proxy_from_code, inputs=[dp_program_id_new, code], show_api=False)
   
-  with gr.Tab("Edit/Delete Tunnel") as change_proxy_tab:
+  with gr.Tab(_("编辑/删除隧道")) as change_proxy_tab:
     with gr.Row():
       dp_program_id_change = gr.Dropdown(interactive=True)
       change_proxy_tab.select(
@@ -293,8 +294,8 @@ def page_proxies(tab_var):
         
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-          raise gr.Error("Error in obtaining the program list data")
+          logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -302,8 +303,8 @@ def page_proxies(tab_var):
         
         msg = get_proxy_by_program_id(program_id_name_map[pname])
         if not msg['status'] == '成功':
-          logger.error(f"Error fetching proxy data:{msg['message']}")
-          raise gr.Error("Error fetching proxy data")
+          logger.error(f"获取隧道配置错误，错误:{msg['message']}")
+          raise gr.Error(_("获取隧道配置错误"))
         names = []
         
         for i in msg['data']:
@@ -319,8 +320,8 @@ def page_proxies(tab_var):
       def get_proxy_config_for_code(pname, name):
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-          raise gr.Error("Error in obtaining the program list data")
+          logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -328,8 +329,8 @@ def page_proxies(tab_var):
         
         msg = get_proxy_by_name(program_id_name_map[pname], name)
         if not msg['status'] == '成功':
-          logger.error(f"Error in obtaining the program list data, Error:{msg['message']}")
-          raise gr.Error("Error in obtaining the program list data")
+          logger.error(f"获取隧道配置错误，错误:{msg['message']}")
+          raise gr.Error(_("获取隧道配置错误"))
 
         data = toml.dumps(msg['data'])
         
@@ -338,8 +339,8 @@ def page_proxies(tab_var):
       def update_proxy_from_code(pname, config):
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error fetching program list data: {program_list['message']}")
-          raise gr.Error("Error fetching program list data")
+          logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -348,20 +349,20 @@ def page_proxies(tab_var):
         try:
           data = json.dumps(toml.loads(config), ensure_ascii=False)
         except Exception as e:
-          logger.error("TOML format conversion failed, error message:%s" % str(e))
-          raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
+          logger.error("TOML 格式转换失败，错误:%s" % str(e))
+          raise gr.Error(_("TOML 格式转换失败，错误:%s") % str(e))
 
         msg = update_proxy_by_name(program_id_name_map[pname], data)
         if not msg['status'] == "成功":
-          logger.error(f"Error updating tunnel configuration data: {msg['message']}")
-          raise gr.Error(f"Error updating tunnel configuration data: {msg['message']}")
+          logger.error("更新隧道配置失败，错误：%s" % msg['message'])
+          raise gr.Error(_("更新隧道配置失败，错误：%s") % msg['message'])
         gr.Success(msg['message'])
       
       def del_proxy(pname, name):
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-          raise gr.Error("Error in obtaining the program list data")
+          logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -369,13 +370,13 @@ def page_proxies(tab_var):
         
         msg = delete_proxy_by_name(program_id_name_map[pname], name)
         if not msg['status'] == "成功":
-          logger.error(f"Error deleting tunnel:{msg['message']}")
-          raise gr.Error(f"Error deleting tunnel:{msg['message']}")
+          logger.error("删除隧道失败，错误: %s" % msg['message'])
+          raise gr.Error(_("删除隧道失败，错误: %s") % msg['message'])
         gr.Success(msg['message'])
       
-      btn_get_proxy_config = gr.Button("Get Tunnel Configuration")
-      btn_update_proxy = gr.Button("Update Tunnel Configuration", variant='huggingface')
-      btn_del_proxy = gr.Button('Delete Tunnel', variant='stop')
+      btn_get_proxy_config = gr.Button(_("获取隧道配置"))
+      btn_update_proxy = gr.Button(_("更新隧道配置"), variant='huggingface')
+      btn_del_proxy = gr.Button(_('删除隧道'), variant='stop')
     
     code_proxy_change = gr.Code(interactive=True)
     
@@ -403,18 +404,18 @@ def page_proxies(tab_var):
       )
 
 def page_visitors(tab_var):
-  gr.Markdown("## Visitors Management")
+  gr.Markdown("## %s" % _("观察者(visitors)管理"))
   visitors_data_table = gr.Dataframe()
   def get_visitors_table():
     data = get_all_visitors()
     if not data["status"] == "成功":
-      logger.error(f"Error fetching visitor data:{data['message']}")
-      raise gr.Error("Error fetching visitor data")
+      logger.error("获取观察者数据错误，错误: %s" % data['message'])
+      raise gr.Error(_("获取观察者数据错误"))
     
     program_list = list_programs()
     if not program_list["status"] == "成功":
-      logger.error(f"Error fetching program list data:{program_list['message']}")
-      raise gr.Error("Error fetching program list data")
+      logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+      raise gr.Error(_("获取程序列表数据错误"))
     program_list = program_list['data'] # list
     
     program_id_name_map = {}
@@ -430,9 +431,9 @@ def page_visitors(tab_var):
       program_id_remoteIp_map[i] = cfg['serverAddr']
     
     data = data['data'] # list
-    data_pd = pd.DataFrame(columns = ["program name", "name", "type", 'route'])
+    data_pd = pd.DataFrame(columns = [_("客户端 ID"), _("观察者名称"), _("类型"), _('路由')])
     if len(data) <= 0:
-      data_pd.loc[0] = ["No Data", "No Data", "No Data", "No Data"]
+      data_pd.loc[0] = [_("无数据"), _("无数据"), _("无数据"), _("无数据")]
     for data_item in data:
       route = f"{data_item['serverName']} -> {data_item['bindAddr']}:{data_item['bindPort']}"
       data_pd.loc[len(data_pd)] = [program_id_name_map[str(data_item['program_id'])], data_item['name'], data_item['type'], route]
@@ -441,7 +442,7 @@ def page_visitors(tab_var):
   
   tab_var.select(fn=get_visitors_table, outputs=visitors_data_table, show_api=False)
 
-  with gr.Tab("New Visitor") as new_visitor_tab:
+  with gr.Tab(_("新建观察者")) as new_visitor_tab:
     with gr.Row():
       dp_program_id_new_visitor = gr.Dropdown(interactive=True)
       new_visitor_tab.select(
@@ -454,8 +455,8 @@ def page_visitors(tab_var):
         try:
           cfg = toml.loads(toml_str)
         except Exception as e:
-          logger.error("TOML format conversion failed, error message:%s" % str(e))
-          raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
+          logger.error("TOML 格式转换失败，错误:%s" % str(e))
+          raise gr.Error(_("TOML 格式转换失败，错误:%s") % str(e))
         cfg = json.dumps(cfg, ensure_ascii=False)
         
         program_name_id_map = get_program_name_ip_map()
@@ -466,9 +467,9 @@ def page_visitors(tab_var):
         else:
           raise gr.Error(msg['message'])
       
-      btn_new_visitor = gr.Button("Create Visitor")
+      btn_new_visitor = gr.Button(_("新建观察者"))
     
-    code_visitor = gr.Code(label="Visitor Parameters (TOML Format)", interactive=True)
+    code_visitor = gr.Code(label=_("隧道参数 (TOML 格式)"), interactive=True)
   
     btn_new_visitor.click(
       fn=new_visitor_from_code, 
@@ -476,7 +477,7 @@ def page_visitors(tab_var):
       show_api=False
       )
   
-  with gr.Tab("Edit/Delete Visitor") as change_visitor_tab:
+  with gr.Tab(_("编辑/删除观察者")) as change_visitor_tab:
     with gr.Row():
       dp_program_id_change_visitor = gr.Dropdown(interactive=True)
       change_visitor_tab.select(
@@ -496,8 +497,8 @@ def page_visitors(tab_var):
         
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-          raise gr.Error("Error in obtaining the program list data")
+          logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -505,8 +506,8 @@ def page_visitors(tab_var):
         
         msg = get_visitors_by_program_id(program_id_name_map[pname])
         if not msg['status'] == '成功':
-          logger.error(f"Error fetching visitor data: {msg['message']}")
-          raise gr.Error("Error fetching visitor data")
+          logger.error("获取观察者配置错误，错误: %s" % msg['message'])
+          raise gr.Error(_("获取观察者配置错误"))
         names = []
         
         for i in msg['data']:
@@ -522,8 +523,8 @@ def page_visitors(tab_var):
       def get_visitor_config_for_code(pname, name):
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-          raise gr.Error("Error in obtaining the program list data, Error:")
+          logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -531,8 +532,8 @@ def page_visitors(tab_var):
         
         msg = get_visitor_by_name(program_id_name_map[pname], name)
         if not msg['status'] == '成功':
-          logger.error(f"Error fetching visitor data: {msg['message']}")
-          raise gr.Error("Error fetching visitor data")
+          logger.error("获取观察者配置错误，错误: %s" % msg['message'])
+          raise gr.Error(_("获取观察者配置错误"))
 
         data = toml.dumps(msg['data'])
         
@@ -541,8 +542,8 @@ def page_visitors(tab_var):
       def update_visitor_from_code(pname, config):
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error fetching program list data: {program_list['message']}")
-          raise gr.Error("Error fetching program list data")
+          logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -551,20 +552,20 @@ def page_visitors(tab_var):
         try:
           data = json.dumps(toml.loads(config), ensure_ascii=False)
         except Exception as e:
-          logger.error("TOML format conversion failed, error message:%s" % str(e))
-          raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
+          logger.error("TOML 格式转换失败，错误:%s" % str(e))
+          raise gr.Error(_("TOML 格式转换失败，错误:%s") % str(e))
 
         msg = update_visitor_by_name(program_id_name_map[pname], data)
         if not msg['status'] == "成功":
-          logger.error(f"Error updating visitor: {msg['message']}")
-          raise gr.Error(f"Error updating visitor: {msg['message']}")
+          logger.error("更新观察者失败，错误: %s" % msg['message']) # "更新观察者失败，错误: %s" % msg['message']
+          raise gr.Error(_("更新观察者失败，错误: %s") % msg['message'])
         gr.Success(msg['message'])
       
       def del_visitor(pname, name):
         program_list = list_programs()
         if not program_list["status"] == "成功":
-          logger.error(f"Error fetching program list data:{program_list['message']}")
-          raise gr.Error("Error fetching program list data")
+          logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+          raise gr.Error(_("获取程序列表数据错误"))
         
         program_id_name_map = {}
         for i in program_list['data']:
@@ -572,13 +573,13 @@ def page_visitors(tab_var):
         
         msg = delete_visitor_by_name(program_id_name_map[pname], name)
         if not msg['status'] == "成功":
-          logger.error(f"Error deleting visitor: {msg['message']}")
-          raise gr.Error(f"Error deleting visitor: {msg['message']}")
+          logger.error("删除观察者失败，错误：%s" % msg['message'])
+          raise gr.Error(_("删除观察者失败，错误：%s") % msg['message'])
         gr.Success(msg['message'])
       
-      btn_get_visitor_config = gr.Button("Get Visitor Configuration")
-      btn_update_visitor = gr.Button("Update Visitor Configuration", variant='huggingface')
-      btn_del_visitor = gr.Button('Delete Visitor', variant='stop')
+      btn_get_visitor_config = gr.Button(_("获取观察者配置"))
+      btn_update_visitor = gr.Button(_("更新观察者配置"), variant='huggingface')
+      btn_del_visitor = gr.Button(_("删除观察者"), variant='stop')
 
     code_visitor_change = gr.Code(interactive=True)
     
@@ -605,7 +606,7 @@ def page_visitors(tab_var):
     )
 
 def page_programs(tab_var):
-  gr.Markdown("## Client Management")
+  gr.Markdown("## %s" % _("客户端管理"))
   client_cfg_table = gr.Dataframe()
 
   def get_client_cfg_table():
@@ -613,12 +614,12 @@ def page_programs(tab_var):
       try:
         data = db.query_program()
       except Exception as e:
-        logger.error(f"Error querying database:{e}")
-        raise gr.Error("Error querying database")
+        logger.error("查询数据库失败，错误: %s" % str(e))
+        raise gr.Error(_("查询数据库失败"))
     
-    data_pd = pd.DataFrame(columns = ["program id", "program name", "description", "status",  'connect address', 'webserver'])
+    data_pd = pd.DataFrame(columns = [_("客户端 ID"), _("客户端名称"), _("客户端备注"), _("状态"),  _("frps 地址"), _("管理面板网址")])
     if len(data) <= 0:
-      data_pd.loc[0] = ["No Data", "No Data", "No Data", "No Data", "No Data", "No Data"]
+      data_pd.loc[0] = [_("无数据"), _("无数据"), _("无数据"), _("无数据"), _("无数据"), _("无数据")]
     
     for data_item in data:
       # status
@@ -626,9 +627,9 @@ def page_programs(tab_var):
       
       frpc_i = program_manager.get_instance(id)
       if not frpc_i:
-        status = "never run"
+        status = _("未运行")
       else:
-        status = "running" if frpc_i.is_running() else "stop"
+        status = _("运行中") if frpc_i.is_running() else _("已停止")
       
       # ca
       msg = get_client_config_by_id(id)
@@ -636,7 +637,7 @@ def page_programs(tab_var):
       port = None
       http_type = "http://"
       if not msg['status'] == "成功":
-        logger.warning(f"client ID:{id}failed to read configuration file: {msg['message']}")
+        logger.warning("客户端%s读取配置文件失败，错误: %s" % (id, msg['message']))
       else: 
         cfg = msg['data']
         if "serverAddr" in cfg.keys():
@@ -655,10 +656,10 @@ def page_programs(tab_var):
       data_pd.loc[len(data_pd)] = [
         id, 
         data_item[1], 
-        data_item[2] if len(data_item[2]) > 0 else "无", 
+        data_item[2] if len(data_item[2]) > 0 else _("无数据"), 
         status,
-        f"{serverAddr}:{serverPort}" if serverAddr else "无", 
-        f"{http_type}{addr}:{port}" if port else "无", 
+        f"{serverAddr}:{serverPort}" if serverAddr else _("无数据"), 
+        f"{http_type}{addr}:{port}" if port else _("无数据"), 
         ]
     
     return gr.Dataframe(value = data_pd)
@@ -671,8 +672,8 @@ def page_programs(tab_var):
   # 新建客户端 删除客户端
   # 新建配置文件， 修改删除配置文件
   
-  with gr.Tab("Client Actions"):
-    with gr.Tab("Actions(start, stop)") as control_tab:
+  with gr.Tab(_("客户端操作")):
+    with gr.Tab(_("启停控制")) as control_tab:
       with gr.Row():
         dp_pid_control = gr.Dropdown(interactive=True)
         control_tab.select(
@@ -682,22 +683,22 @@ def page_programs(tab_var):
         )
         
         with gr.Column():
-          btn_control_start = gr.Button("Start", variant="primary")
-          btn_control_reload = gr.Button("Reload Config")
+          btn_control_start = gr.Button(_("启动"), variant="primary")
+          btn_control_reload = gr.Button(_("热更新配置"))
         with gr.Column():
-          btn_control_stop = gr.Button("Stop", variant="stop")
-          btn_control_restart = gr.Button("Restart")
+          btn_control_stop = gr.Button(_("停止"), variant="stop")
+          btn_control_restart = gr.Button(_("重启"))
         
         async def control(pname, action):
           program_name_ip_map = get_program_name_ip_map()
           
           msg = await program_controller(program_name_ip_map[pname], action)
           if not msg:
-            logger.error("Operation failed, error: returned None")
-            raise gr.Error("Operation failed")
+            logger.error("操作失败，错误: 返回为空")
+            raise gr.Error(_("操作失败"))
           if not msg['status'] == '成功':
-            logger.error("Operation failed：%s" % msg['message'])
-            raise gr.Error("Operation failed")
+            logger.error("操作失败，错误: %s" % msg['message'])
+            raise gr.Error(_("操作失败，错误: %s") % msg['message'])
 
           gr.Success(msg['message'])
         
@@ -724,9 +725,9 @@ def page_programs(tab_var):
           inputs=[dp_pid_control, gr.State('restart')],
           show_api=False
           )
-    with gr.Tab("New Client"): 
+    with gr.Tab(_("上传并新建客户端")): 
       new_program()
-    with gr.Tab("Delete Client") as client_del_tab: 
+    with gr.Tab(_("删除客户端")) as client_del_tab: 
       with gr.Row():
         dp_pid_client_del = gr.Dropdown(interactive=True)
         client_del_tab.select(
@@ -740,10 +741,11 @@ def page_programs(tab_var):
           
           msg = delete_program(program_name_ip_map[pname])
           if not msg['status'] == "成功":
-            raise gr.Error(f"Failed to delete client:{msg['message']}")
+            logger.error("删除客户端失败，错误: %s" % msg["message"])
+            raise gr.Error(_("删除客户端失败，错误: %s") % msg["message"])
           gr.Success(msg['message'])
         
-        btn_client_del = gr.Button("Delete")
+        btn_client_del = gr.Button(_("删除"))
         btn_client_del.click(
           show_api=False,
           fn=client_del,
@@ -755,8 +757,8 @@ def page_programs(tab_var):
       outputs=dp_pid_control
     )
   
-  with gr.Tab("Client Configuration") as ccfg_action_tab:
-    with gr.Tab("Edit/Delete Client Configuration File") as ccfg_change_tab:
+  with gr.Tab(_("客户端配置文件管理")) as ccfg_action_tab:
+    with gr.Tab(_("编辑/删除配置文件")) as ccfg_change_tab:
       with gr.Row():
         dp_pid_change_ccfg = gr.Dropdown(interactive=True) # ccfg = client config
         ccfg_change_tab.select(
@@ -768,17 +770,17 @@ def page_programs(tab_var):
         def get_client_config_for_code(pname):
           program_list = list_programs()
           if not program_list["status"] == "成功":
-            logger.error(f"Error fetching program list data:{program_list['message']}")
-            raise gr.Error("Error fetching program list data")
-          
+            logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+            raise gr.Error(_("获取程序列表数据错误"))
+
           program_id_name_map = {}
           for i in program_list['data']:
             program_id_name_map[i['name']] = str(i['id'])
           
           msg = get_client_config_by_id(program_id_name_map[pname])
           if not msg['status'] == '成功':
-            logger.error(f"Error fetching client configuration file: {msg['message']}")
-            raise gr.Error("Error fetching client configuration file")
+            logger.error("获取客户端配置文件失败，错误: %s" % msg['message'])
+            raise gr.Error(_("获取客户端配置文件失败"))
 
           data = toml.dumps(msg['data'])
           
@@ -787,8 +789,8 @@ def page_programs(tab_var):
         def update_client_config_from_code(pname, config):
           program_list = list_programs()
           if not program_list["status"] == "成功":
-            logger.error(f"Error fetching program list data:{program_list['message']}")
-            raise gr.Error("Error fetching program list data")
+            logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+            raise gr.Error(_("获取程序列表数据错误"))
           
           program_id_name_map = {}
           for i in program_list['data']:
@@ -797,20 +799,20 @@ def page_programs(tab_var):
           try:
             data = json.dumps(toml.loads(config), ensure_ascii=False)
           except Exception as e:
-            logger.error("TOML format conversion failed, error message:%s" % str(e))
-            raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
+            logger.error("TOML 格式转换失败，错误:%s" % str(e))
+            raise gr.Error(_("TOML 格式转换失败，错误:%s") % str(e))
 
           msg = update_client_config(program_id_name_map[pname], data)
           if not msg['status'] == "成功":
-            logger.error(f"Error updating client configuration file:{msg['message']}")
-            raise gr.Error(f"Error updating client configuration file:{msg['message']}")
+            logger.error("更新客户端配置文件失败，错误: %s" % msg['message'])
+            raise gr.Error(_("更新客户端配置文件失败，错误: %s") % msg['message'])
           gr.Success(msg['message'])
         
         def del_client_config(pname):
           program_list = list_programs()
           if not program_list["status"] == "成功":
-            logger.error(f"Error fetching program list data: {program_list['message']}")
-            raise gr.Error("Error fetching program list data: ")
+            logger.error("获取程序列表数据错误，错误：%s" % program_list['message'])
+            raise gr.Error("获取程序列表数据错误")
           
           program_id_name_map = {}
           for i in program_list['data']:
@@ -818,13 +820,13 @@ def page_programs(tab_var):
           
           msg = delete_client_config(program_id_name_map[pname])
           if not msg['status'] == "成功":
-            logger.error(f"Error deleting client configuration file: {msg['message']}")
-            raise gr.Error(f"Error deleting client configuration file: {msg['message']}")
+            logger.error("删除客户端配置文件失败，错误: %s" % msg['message'])
+            raise gr.Error(_("删除客户端配置文件失败，错误: %s") % msg['message'])
           gr.Success(msg['message'])
         
-        btn_get_ccfg = gr.Button("Get Client Configuration")
-        btn_update_ccfg = gr.Button("Update Client Configuration", variant='huggingface')
-        btn_del_ccfg = gr.Button('Delete Client Configuration', variant='stop')
+        btn_get_ccfg = gr.Button(_("获取配置文件"))
+        btn_update_ccfg = gr.Button(_("更新配置文件"), variant='huggingface')
+        btn_del_ccfg = gr.Button(_("删除配置文件"), variant='stop')
       
       code_ccfg_change = gr.Code(interactive=True)
       
@@ -845,7 +847,7 @@ def page_programs(tab_var):
         show_api=False
         )
       
-    with gr.Tab("New Client Configuration") as ccfg_new_tab:
+    with gr.Tab(_("新建配置文件")) as ccfg_new_tab:
       with gr.Row():
         dp_pid_new_cfg = gr.Dropdown(interactive=True)
         ccfg_new_tab.select(
@@ -853,7 +855,7 @@ def page_programs(tab_var):
           fn=get_dp_choices_for_program_name,
           outputs=dp_pid_new_cfg
         )
-        btn_new_ccfg = gr.Button('Create Client Configuration')
+        btn_new_ccfg = gr.Button(_("新建配置文件"))
       
       code_ccfg_new = gr.Code(interactive=True)
       
@@ -863,13 +865,13 @@ def page_programs(tab_var):
         try:
           data = json.dumps(toml.loads(config), ensure_ascii=False)
         except Exception as e:
-          logger.error("TOML format conversion failed, error message:%s" % str(e))
-          raise gr.Error("TOML format conversion failed, error message:%s" % str(e))
+          logger.error("TOML 格式转换失败，错误:%s" % str(e))
+          raise gr.Error("TOML 格式转换失败，错误:%s" % str(e))
         
         msg = new_client_config(program_name_ip_map[pname], data)
         if not msg['status'] == "成功":
-          logger.error("Failed to create configuration file, error:%s" % msg['message'])
-          raise gr.Error("Failed to create configuration file")
+          logger.error("新建客户端配置文件失败，错误: %s" % msg['message'])
+          raise gr.Error("新建客户端配置文件失败")
 
         gr.Success(msg['message'])
       
@@ -886,11 +888,11 @@ def page_programs(tab_var):
     )
 
 def page_logs(tab_var):
-  gr.Markdown("## program log")
-      
+  gr.Markdown("## %s" % _("客户端日志"))
+  
   dropdown = gr.Dropdown(
     choices=[],
-    label="Select Client to View Logs",
+    label=_("选择客户端以查看日志"),
     )
   
   def log_pid():
@@ -901,8 +903,8 @@ def page_logs(tab_var):
         for i in r:
           program_dict[i[1]] = str(i[0])
       except Exception as e:
-        logger.error(f"Database operation error:{e}")
-        raise gr.Error("Database operation error")
+        logger.error("数据库操作错误，错误：%s" % str(e))
+        raise gr.Error(_("数据库操作错误"))
       return gr.Dropdown(
         choices=list(program_dict.keys()), 
         value = list(program_dict.keys())[0] if len(program_dict.keys()) > 0 else None,
@@ -914,9 +916,8 @@ def page_logs(tab_var):
     outputs=dropdown
   )
   
-  btn = gr.Button("Watch Log")
+  btn = gr.Button(_("查看日志"))
   # log_text_box = gr.Textbox(label="实时日志输出", interactive=False, max_lines=100)
-  gr.Markdown("")
   log_html_box = gr.HTML(
     label="Log", 
     max_height=400,
@@ -932,8 +933,8 @@ def page_logs(tab_var):
 def get_dp_choices_for_program_name():
   program_list = list_programs()
   if not program_list["status"] == "成功":
-    logger.error(f"Error in obtaining the program list data, Error message: {program_list['message']}")
-    raise gr.Error("Error in obtaining the program list data")
+    logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+    raise gr.Error(_("获取程序列表数据错误"))
   
   program_id_name_map = {}
   for i in program_list['data']:
@@ -946,8 +947,8 @@ def get_dp_choices_for_program_name():
 def get_program_name_ip_map():
   program_list = list_programs()
   if not program_list["status"] == "成功":
-    logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-    raise gr.Error("Error in obtaining the program list data")
+    logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+    raise gr.Error(_("获取程序列表数据错误"))
   program_list = program_list['data'] # list
   
   program_id_name_map = {}
@@ -956,7 +957,7 @@ def get_program_name_ip_map():
   return program_id_name_map
 
 with gr.Blocks(title="frpc centralized panel") as demo:
-  gr.Markdown("# frpc centralized panel with MCP")
+  gr.Markdown("# 🚀%s" % _("frpc 管理面板"))
 
   with gr.Tabs():
     
@@ -967,16 +968,16 @@ with gr.Blocks(title="frpc centralized panel") as demo:
         gr.Markdown(f.read())
     
     
-    with gr.Tab("Proxies Management") as proxies_tab:
+    with gr.Tab(_('隧道(proxies)管理')) as proxies_tab:
       page_proxies(proxies_tab)
   
-    with gr.Tab("Visitors Management") as visitors_tab:
+    with gr.Tab(_("观察者(visitors)管理")) as visitors_tab:
       page_visitors(visitors_tab)
     
-    with gr.Tab("Client Management") as client_cfg_tab:
+    with gr.Tab(_("客户端管理")) as client_cfg_tab:
       page_programs(client_cfg_tab)
     
-    with gr.TabItem("Log") as log_tab:
+    with gr.TabItem(_("客户端日志")) as log_tab:
       page_logs(log_tab)
     
     with gr.TabItem("MCP API", id=1) as mcp_tab:
@@ -1011,5 +1012,6 @@ if __name__ == "__main__":
     
     demo.launch(
         mcp_server=True, 
-        server_name="0.0.0.0"
+        server_name="0.0.0.0",
+        server_port=7861,
     )
