@@ -187,6 +187,9 @@ def page_programs_mcp():
         outputs = "text"
     )
 
+def clean_codebox():
+  return gr.Code(value="")
+
 def init():
     """准备 app"""
     logger.info("初始化数据库")
@@ -280,6 +283,8 @@ def page_proxies(tab_var):
       btn_new = gr.Button(_("新建"))
     
     code = gr.Code(label=_("隧道参数 (TOML 格式)"), interactive=True)
+    tab_var.select(fn=clean_codebox, outputs=code, show_api=False)
+    new_proxy_tab.select(fn=clean_codebox, outputs=code, show_api=False)
     btn_new.click(fn=new_proxy_from_code, inputs=[dp_program_id_new, code], show_api=False)
   
   tab_var.select(
@@ -326,6 +331,13 @@ def page_proxies(tab_var):
         for i in msg['data']:
           names.append(i['name'])
         return gr.Dropdown(choices=names, value= names[0] if len(names) > 0 else None)
+      
+      change_proxy_tab.select(
+        fn=get_dp_choices_for_proxies, 
+        inputs=[dp_program_id_change], 
+        outputs=dp_proxy_name, 
+        show_api=False
+        )
       dp_program_id_change.change(
         fn=get_dp_choices_for_proxies, 
         inputs=[dp_program_id_change], 
@@ -395,6 +407,8 @@ def page_proxies(tab_var):
       btn_del_proxy = gr.Button(_('删除隧道'), variant='stop')
     
     code_proxy_change = gr.Code(label=_("隧道参数 (TOML 格式)"), interactive=True)
+    tab_var.select(fn=clean_codebox, outputs=code_proxy_change, show_api=False)
+    change_proxy_tab.select(fn=clean_codebox, outputs=code_proxy_change, show_api=False)
     
     btn_get_proxy_config.click(
       fn=get_proxy_config_for_code, 
@@ -491,7 +505,9 @@ def page_visitors(tab_var):
       btn_new_visitor = gr.Button(_("新建观察者"))
     
     code_visitor = gr.Code(label=_("观察者参数 (TOML 格式)"), interactive=True)
-  
+    tab_var.select(fn=clean_codebox, outputs=code_visitor, show_api=False)
+    new_visitor_tab.select(fn=clean_codebox, outputs=code_visitor, show_api=False)
+    
     btn_new_visitor.click(
       fn=new_visitor_from_code, 
       inputs=[dp_program_id_new_visitor, code_visitor], 
@@ -540,6 +556,13 @@ def page_visitors(tab_var):
         for i in msg['data']:
           names.append(i['name'])
         return gr.Dropdown(choices=names, value= names[0] if len(names) > 0 else None)
+      
+      change_visitor_tab.select(
+        fn=get_dp_choices_for_visitors, 
+        inputs=[dp_program_id_change_visitor], 
+        outputs=dp_visitor_name, 
+        show_api=False
+        )
       dp_program_id_change_visitor.change(
         fn=get_dp_choices_for_visitors, 
         inputs=[dp_program_id_change_visitor], 
@@ -609,6 +632,8 @@ def page_visitors(tab_var):
       btn_del_visitor = gr.Button(_("删除观察者"), variant='stop')
 
     code_visitor_change = gr.Code(label=_("观察者参数 (TOML 格式)"), interactive=True)
+    tab_var.select(fn=clean_codebox, outputs=code_visitor_change, show_api=False)
+    change_visitor_tab.select(fn=clean_codebox, outputs=code_visitor_change, show_api=False)
     
     btn_get_visitor_config.click(
       fn=get_visitor_config_for_code, 
@@ -761,8 +786,8 @@ def page_programs(tab_var):
           inputs=[dp_pid_control, gr.State('restart')],
           show_api=False
           )
-    with gr.Tab(_("上传并新建客户端")): 
-      new_program()
+    with gr.Tab(_("上传并新建客户端")) as new_program_tab: 
+      new_program(new_program_tab)
     with gr.Tab(_("删除客户端")) as client_del_tab: 
       with gr.Row():
         dp_pid_client_del = gr.Dropdown(
@@ -868,6 +893,8 @@ def page_programs(tab_var):
         btn_del_ccfg = gr.Button(_("删除配置文件"), variant='stop')
       
       code_ccfg_change = gr.Code(label=_("客户端配置文件 (TOML 格式)"), interactive=True)
+      tab_var.select(fn=clean_codebox, outputs=code_ccfg_change, show_api=False)
+      ccfg_change_tab.select(fn=clean_codebox, outputs=code_ccfg_change, show_api=False)
       
       btn_get_ccfg.click(
       fn=get_client_config_for_code, 
@@ -897,6 +924,8 @@ def page_programs(tab_var):
         btn_new_ccfg = gr.Button(_("新建配置文件"))
       
       code_ccfg_new = gr.Code(label = _("客户端配置文件 (TOML 格式)"), interactive=True)
+      tab_var.select(fn=clean_codebox, outputs=code_ccfg_new, show_api=False)
+      ccfg_new_tab.select(fn=clean_codebox, outputs=code_ccfg_new, show_api=False)
       
       def new_client_config_from_code(pname, config):
         program_name_ip_map = get_program_name_ip_map()

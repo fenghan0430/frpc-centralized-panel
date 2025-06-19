@@ -377,7 +377,7 @@ async def program_controller(program_id: str, action: str,):
     if action == "reload":
         return await reload_program(program_id)
 
-def new_program():
+def new_program(tab_var):
     """上传program的gradio界面"""
 
     def submit(gr_file: gr.File, name: str, description: str):
@@ -432,6 +432,15 @@ def new_program():
     file_input = gr.File(label=_("拖动或点击以上传frpc客户端程序"))
     name = gr.Textbox(label=_("客户端名称"))
     description = gr.Textbox(label=_("客户端描述"))
+    
+    def clean_file_input():
+        return gr.File(value=None)
+    def clean_textbox():
+        return gr.Textbox(value=None)
+    
+    tab_var.select(show_api=False, fn=clean_file_input, outputs=file_input)
+    tab_var.select(show_api=False, fn=clean_textbox, outputs=name)
+    tab_var.select(show_api=False, fn=clean_textbox, outputs=description)
     
     btn = gr.Button(_("新建客户端"))
     btn.click(fn=submit, inputs=[file_input, name, description], show_api=False)
