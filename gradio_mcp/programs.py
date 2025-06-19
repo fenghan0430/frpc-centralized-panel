@@ -439,10 +439,17 @@ def new_program():
 async def watch_log(program_name: str):
     """查看程序日志"""
     from ansi2html import Ansi2HTMLConverter
+    WARNING_TEMPLATE = (
+    "<p style='color: #856404; background-color: #fff3cd;"
+    " border: 1px solid #ffeeba; padding: 8px;"
+    " border-radius: 4px; margin-top: 10px;'>"
+    f"<strong>{_('注意')}：</strong> %s" # 注意：f格式化字符串会导致无法动态切换语言
+    "</p>"
+    )
     program_list = list_programs()
     if not program_list["status"] == "成功":
-        logger.error(f"Error in obtaining the program list data, Error:{program_list['message']}")
-        raise gr.Error("Error in obtaining the program list data")
+        logger.error(f"获取程序列表数据错误，错误：{program_list['message']}")
+        raise gr.Error(_("获取程序列表数据错误"))
     program_list = program_list['data'] # list
     
     program_name_id_map = {}
@@ -451,36 +458,31 @@ async def watch_log(program_name: str):
     
     program_id = program_name_id_map[program_name]
     
-    programs = list_programs()
-    
-    if programs['status'] == "成功":
-        programs = programs['data']
-    else:
-        logger.error(f"获取程序列表失败: {programs['msg']}")
-        yield "Error in obtaining the program list data"
-        return
     is_running = False
-    
-    for program in programs:
+    for program in program_list:
         if program_id == str(program['id']) and program['status'] == "运行":
             is_running = True
+    not_running_msg = None
     if not is_running:
-        yield f"Client not start"
-        return
+        not_running_msg = _("程序%s未在运行，输出的日志可能过时") % program_name
     
     log_file = f"data/cmd/{program_id}/log.log"
     
-    if not log_file:
-        yield "No Data"
-        return
-    
     # 等待日志文件生成
+    count = 0
     while not os.path.exists(log_file):
+        if count > 30:
+            yield WARNING_TEMPLATE % _("程序未输出日志文件")
+            return
+        else:
+            count += 1
         await asyncio.sleep(0.1)
-
+    
     with open(log_file, "r") as f:
         conv = Ansi2HTMLConverter(inline=True)
         f.seek(0)
         content = f.read()
         html = conv.convert(content)
+        if not_running_msg:
+            html += WARNING_TEMPLATE % not_running_msg
         yield html

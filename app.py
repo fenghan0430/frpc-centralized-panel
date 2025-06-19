@@ -196,6 +196,7 @@ def init():
 def page_proxies(tab_var):
   gr.Markdown(f"## {_('隧道(proxies)管理')}")
   data_table = gr.Dataframe()
+  btn_refresh_proxies = gr.Button(_("刷新"))
   def get_proxies_table():
     data = get_all_proxies()
     if not data["status"] == "成功":
@@ -239,11 +240,15 @@ def page_proxies(tab_var):
     
     return gr.Dataframe(value = data_pd)
   
+  btn_refresh_proxies.click(fn=get_proxies_table, outputs=data_table, show_api=False)
   tab_var.select(fn=get_proxies_table, outputs=data_table, show_api=False)
   
   with gr.Tab(_("新建隧道")) as new_proxy_tab:
     with gr.Row():
-      dp_program_id_new = gr.Dropdown(interactive=True)
+      dp_program_id_new = gr.Dropdown(
+        label=_("选择客户端"),
+        interactive=True
+        )
 
       new_proxy_tab.select(
         fn=get_dp_choices_for_program_name, 
@@ -277,16 +282,27 @@ def page_proxies(tab_var):
     code = gr.Code(label=_("隧道参数 (TOML 格式)"), interactive=True)
     btn_new.click(fn=new_proxy_from_code, inputs=[dp_program_id_new, code], show_api=False)
   
+  tab_var.select(
+    fn=get_dp_choices_for_program_name, 
+    outputs=dp_program_id_new, 
+    show_api=False)
+  
   with gr.Tab(_("编辑/删除隧道")) as change_proxy_tab:
     with gr.Row():
-      dp_program_id_change = gr.Dropdown(interactive=True)
+      dp_program_id_change = gr.Dropdown(
+        label=_("选择客户端"),
+        interactive=True
+        )
       change_proxy_tab.select(
         fn=get_dp_choices_for_program_name, 
         outputs=dp_program_id_change, 
         show_api=False
         )
       
-      dp_proxy_name = gr.Dropdown(interactive=True)
+      dp_proxy_name = gr.Dropdown(
+        label=_("选择隧道"),
+        interactive=True
+        )
       
       def get_dp_choices_for_proxies(pname):
         if not pname:
@@ -378,7 +394,7 @@ def page_proxies(tab_var):
       btn_update_proxy = gr.Button(_("更新隧道配置"), variant='huggingface')
       btn_del_proxy = gr.Button(_('删除隧道'), variant='stop')
     
-    code_proxy_change = gr.Code(interactive=True)
+    code_proxy_change = gr.Code(label=_("隧道参数 (TOML 格式)"), interactive=True)
     
     btn_get_proxy_config.click(
       fn=get_proxy_config_for_code, 
@@ -406,6 +422,7 @@ def page_proxies(tab_var):
 def page_visitors(tab_var):
   gr.Markdown("## %s" % _("观察者(visitors)管理"))
   visitors_data_table = gr.Dataframe()
+  btn_refresh_visitors = gr.Button(_("刷新"))
   def get_visitors_table():
     data = get_all_visitors()
     if not data["status"] == "成功":
@@ -440,11 +457,15 @@ def page_visitors(tab_var):
     
     return gr.Dataframe(value = data_pd)
   
+  btn_refresh_visitors.click(fn=get_visitors_table, outputs=visitors_data_table, show_api=False)
   tab_var.select(fn=get_visitors_table, outputs=visitors_data_table, show_api=False)
 
   with gr.Tab(_("新建观察者")) as new_visitor_tab:
     with gr.Row():
-      dp_program_id_new_visitor = gr.Dropdown(interactive=True)
+      dp_program_id_new_visitor = gr.Dropdown(
+        label=_("选择客户端"),
+        interactive=True
+        )
       new_visitor_tab.select(
         fn=get_dp_choices_for_program_name, 
         outputs=dp_program_id_new_visitor, 
@@ -469,7 +490,7 @@ def page_visitors(tab_var):
       
       btn_new_visitor = gr.Button(_("新建观察者"))
     
-    code_visitor = gr.Code(label=_("隧道参数 (TOML 格式)"), interactive=True)
+    code_visitor = gr.Code(label=_("观察者参数 (TOML 格式)"), interactive=True)
   
     btn_new_visitor.click(
       fn=new_visitor_from_code, 
@@ -479,14 +500,20 @@ def page_visitors(tab_var):
   
   with gr.Tab(_("编辑/删除观察者")) as change_visitor_tab:
     with gr.Row():
-      dp_program_id_change_visitor = gr.Dropdown(interactive=True)
+      dp_program_id_change_visitor = gr.Dropdown(
+        label=_("选择客户端"),
+        interactive=True
+        )
       change_visitor_tab.select(
         fn=get_dp_choices_for_program_name, 
         outputs=dp_program_id_change_visitor, 
         show_api=False
         )
 
-      dp_visitor_name = gr.Dropdown(interactive=True)
+      dp_visitor_name = gr.Dropdown(
+        label=_("选择观察者"),
+        interactive=True
+        )
       
       def get_dp_choices_for_visitors(pname):
         if not pname:
@@ -581,7 +608,7 @@ def page_visitors(tab_var):
       btn_update_visitor = gr.Button(_("更新观察者配置"), variant='huggingface')
       btn_del_visitor = gr.Button(_("删除观察者"), variant='stop')
 
-    code_visitor_change = gr.Code(interactive=True)
+    code_visitor_change = gr.Code(label=_("观察者参数 (TOML 格式)"), interactive=True)
     
     btn_get_visitor_config.click(
       fn=get_visitor_config_for_code, 
@@ -599,6 +626,7 @@ def page_visitors(tab_var):
       inputs=[dp_program_id_change_visitor, dp_visitor_name],
       show_api=False
       )
+  
   tab_var.select(
     fn=get_dp_choices_for_program_name, 
     outputs=dp_program_id_new_visitor, 
@@ -608,7 +636,7 @@ def page_visitors(tab_var):
 def page_programs(tab_var):
   gr.Markdown("## %s" % _("客户端管理"))
   client_cfg_table = gr.Dataframe()
-
+  btn_refresh_client_cfg_table = gr.Button(_("刷新"))
   def get_client_cfg_table():
     with DataBase(os.path.join(data_path, "data.db")) as db:
       try:
@@ -664,6 +692,11 @@ def page_programs(tab_var):
     
     return gr.Dataframe(value = data_pd)
 
+  btn_refresh_client_cfg_table.click(
+    fn=get_client_cfg_table,
+    outputs=client_cfg_table,
+    show_api=False
+    )
   tab_var.select(
     fn=get_client_cfg_table,
     outputs=client_cfg_table,
@@ -675,7 +708,10 @@ def page_programs(tab_var):
   with gr.Tab(_("客户端操作")):
     with gr.Tab(_("启停控制")) as control_tab:
       with gr.Row():
-        dp_pid_control = gr.Dropdown(interactive=True)
+        dp_pid_control = gr.Dropdown(
+          label=_("选择客户端"),
+          interactive=True
+          )
         control_tab.select(
           show_api=False,
           fn=get_dp_choices_for_program_name,
@@ -729,7 +765,10 @@ def page_programs(tab_var):
       new_program()
     with gr.Tab(_("删除客户端")) as client_del_tab: 
       with gr.Row():
-        dp_pid_client_del = gr.Dropdown(interactive=True)
+        dp_pid_client_del = gr.Dropdown(
+          label=_("选择客户端"),
+          interactive=True
+          )
         client_del_tab.select(
           fn=get_dp_choices_for_program_name,
           outputs=dp_pid_client_del, 
@@ -745,7 +784,7 @@ def page_programs(tab_var):
             raise gr.Error(_("删除客户端失败，错误: %s") % msg["message"])
           gr.Success(msg['message'])
         
-        btn_client_del = gr.Button(_("删除"))
+        btn_client_del = gr.Button(_("删除"), variant="stop")
         btn_client_del.click(
           show_api=False,
           fn=client_del,
@@ -760,7 +799,7 @@ def page_programs(tab_var):
   with gr.Tab(_("客户端配置文件管理")) as ccfg_action_tab:
     with gr.Tab(_("编辑/删除配置文件")) as ccfg_change_tab:
       with gr.Row():
-        dp_pid_change_ccfg = gr.Dropdown(interactive=True) # ccfg = client config
+        dp_pid_change_ccfg = gr.Dropdown(label=_("选择客户端"), interactive=True) # ccfg = client config
         ccfg_change_tab.select(
           show_api=False,
           fn=get_dp_choices_for_program_name,
@@ -828,7 +867,7 @@ def page_programs(tab_var):
         btn_update_ccfg = gr.Button(_("更新配置文件"), variant='huggingface')
         btn_del_ccfg = gr.Button(_("删除配置文件"), variant='stop')
       
-      code_ccfg_change = gr.Code(interactive=True)
+      code_ccfg_change = gr.Code(label=_("客户端配置文件 (TOML 格式)"), interactive=True)
       
       btn_get_ccfg.click(
       fn=get_client_config_for_code, 
@@ -849,7 +888,7 @@ def page_programs(tab_var):
       
     with gr.Tab(_("新建配置文件")) as ccfg_new_tab:
       with gr.Row():
-        dp_pid_new_cfg = gr.Dropdown(interactive=True)
+        dp_pid_new_cfg = gr.Dropdown(label=_("选择客户端"), interactive=True)
         ccfg_new_tab.select(
           show_api=False,
           fn=get_dp_choices_for_program_name,
@@ -857,7 +896,7 @@ def page_programs(tab_var):
         )
         btn_new_ccfg = gr.Button(_("新建配置文件"))
       
-      code_ccfg_new = gr.Code(interactive=True)
+      code_ccfg_new = gr.Code(label = _("客户端配置文件 (TOML 格式)"), interactive=True)
       
       def new_client_config_from_code(pname, config):
         program_name_ip_map = get_program_name_ip_map()
@@ -894,7 +933,7 @@ def page_logs(tab_var):
     choices=[],
     label=_("选择客户端以查看日志"),
     )
-  
+
   def log_pid():
     program_dict = {} # key: name, v: id
     with DataBase(os.path.join(data_path, "data.db")) as db:
