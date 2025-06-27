@@ -1,9 +1,15 @@
 .venv/
 PID控制/
 .idea/
-__pycache__/
+__pycache__
+*.py[cod]
 
 # 测试文件
 temp_tool/
 html/
 fastapiT
+.gradio/
+.vscode/
+data/
+api/
+container/

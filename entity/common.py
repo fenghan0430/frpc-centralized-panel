@@ -8,8 +8,8 @@ class LogConfig(BaseModel):
     disablePrintColor: Optional[bool] = None
 
 class TLSConfig(BaseModel):
-    certFile: str
-    keyFile: str
+    certFile: Optional[str] = None
+    keyFile: Optional[str] = None
     trustedCaFile: Optional[str] = None
     serverName: Optional[str] = None
 

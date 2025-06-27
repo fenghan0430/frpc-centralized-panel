@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  frpc_panel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: frpcp:v1
+    container_name: frpc_panel
+    volumes:
+      - <data_path>:/app/data
+    network_mode: host
+    restart: unless-stopped
