@@ -46,6 +46,13 @@ select_tab_id = None
 tasks = []
 program_manager = ProgramManager()
 
+css = """
+#md1 {
+  font-family: '新宋体', 'NSimSun', serif;
+  --text-md: 18px;
+}
+"""
+
 def page_client_configs_mcp():
     gr.Markdown(f"# {_('客户端配置文件工具')}")
     gr.Markdown("## get_client_config_by_id")
@@ -995,7 +1002,7 @@ def page_logs(tab_var):
     fn=watch_log, 
     inputs=[dropdown], 
     outputs=log_html_box,
-    show_api=False
+    show_api=False,
     )
 
 def get_dp_choices_for_program_name():
@@ -1024,16 +1031,15 @@ def get_program_name_ip_map():
     program_id_name_map[program_list[i]['name']] = str(program_list[i]['id'])
   return program_id_name_map
 
-with gr.Blocks(title="frpc centralized panel") as demo:
+with gr.Blocks(title="frpc centralized panel", css=css) as demo:
   gr.Markdown("# 🚀%s" % _("frpc 管理面板"))
 
   with gr.Tabs():
     
     
     with gr.TabItem("README") as readme_tab:
-      with open("./README.md", "r", encoding='utf-8') as f:
-        
-        gr.Markdown(f.read())
+      with open("./README-zh.md", "r", encoding='utf-8') as f:
+        gr.Markdown(f.read(), sanitize_html=False, container=True, elem_id="md1")
     
     
     with gr.Tab(_('隧道(proxies)管理')) as proxies_tab:
