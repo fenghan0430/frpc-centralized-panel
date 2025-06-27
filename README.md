@@ -1,7 +1,7 @@
 ## Introduction
-frpc Centralized Panel is a Gradio-based centralized management platform designed to unify the administration of multiple frpc instances and their configuration files.  
-In traditional setups, users must start frpc in the shell and manually edit different TOML configurations to maintain multiple tunnels.  
-When managing multiple servers (for example, one with high bandwidth/high latency and another with low latency/low bandwidth), the administrative overhead can increase dramatically.  
+frpc Centralized Panel is a Gradio-based centralized management platform designed to unify the administration of multiple frpc instances and their configuration files.
+In traditional setups, users must start frpc in the shell and manually edit different TOML configurations to maintain multiple tunnels.
+When managing multiple servers (for example, one with high bandwidth/high latency and another with low latency/low bandwidth), the administrative overhead can increase dramatically.
 This project combines MCP (Model Context Protocol) interactions with a Gradio visual interface, allowing you to effortlessly handle the entire workflow—uploading programs, configuring, launching, and monitoring.
 
 ## Key Features
